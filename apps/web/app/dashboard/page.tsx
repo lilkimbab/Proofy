@@ -10,6 +10,14 @@ import { api } from "@/lib/api";
 import { buildTrackViews } from "@/lib/curriculum";
 import type { DashboardResponse, Task } from "@/lib/types";
 
+type Tab = "today" | "week" | "subjects";
+
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "today", label: "오늘" },
+  { id: "week", label: "이번 주" },
+  { id: "subjects", label: "과목별 실력" },
+];
+
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   ready: { label: "시작 가능", className: "badge-primary" },
   retry: { label: "재도전", className: "badge-warning" },
@@ -18,26 +26,27 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   planned: { label: "예정", className: "" },
 };
 
-function TaskRow({ task }: { task: Task }) {
+/** "미적분 · 미분 개념 다시 보기" -> "미분 개념 다시 보기" */
+function shortTitle(title: string) {
+  return title.split(" · ").slice(1).join(" · ") || title;
+}
+
+function TodayStep({ task, index }: { task: Task; index: number }) {
   const kind = taskKind(task.type);
   const status = STATUS_LABEL[task.status] ?? { label: task.status, className: "" };
   const actionable = task.status === "ready" || task.status === "retry";
   return (
-    <div className={`task ${task.status === "done" ? "is-done" : ""}`}>
-      <span className={`task-icon ${kind.className}`} aria-hidden="true">
-        {kind.label}
-      </span>
-      <div>
-        <div className="task-title">{task.title}</div>
-        <div className="task-sub row" style={{ gap: 8 }}>
-          <span>{task.minutes}분</span>
-          <span className={`badge ${status.className}`}>{status.label}</span>
-        </div>
+    <li className={`day-step is-${task.status}`}>
+      <span className="day-step-no">{task.status === "done" ? "✓" : index + 1}</span>
+      <div className="day-step-body">
+        <span className={`day-step-kind ${kind.className}`}>{kind.label}</span>
+        <strong>{shortTitle(task.title)}</strong>
+        <span className="day-step-meta">
+          {task.minutes}분 · <span className={`badge ${status.className}`}>{status.label}</span>
+        </span>
       </div>
-      {actionable ? (
-        <TaskLaunchButton task={task} className={`btn btn-sm ${task.status === "ready" ? "btn-primary" : "btn-secondary"}`} />
-      ) : null}
-    </div>
+      {actionable ? <TaskLaunchButton task={task} className="btn btn-secondary btn-sm" /> : null}
+    </li>
   );
 }
 
@@ -45,6 +54,7 @@ export default function DashboardPage() {
   const { ready, session } = useAuthGuard();
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("today");
 
   useEffect(() => {
     if (!ready) return;
@@ -79,166 +89,132 @@ export default function DashboardPage() {
   const currentTask = todayMission.currentTask ?? null;
   const name = session?.displayName ?? "";
   const doneCount = todayPlan.tasks.filter((task) => task.status === "done").length;
-  // The card describes the plan's next task when there is one; otherwise the loaded lesson.
-  const nextLessonName = currentTask
-    ? currentTask.title.split(" · ").slice(1).join(" · ") || currentTask.title
-    : activeContent?.lessonTitle ?? todayMission.recommendedUnit;
+  const currentIndex = currentTask ? todayPlan.tasks.findIndex((task) => task.id === currentTask.id) : -1;
   const todayLabel = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" });
 
   return (
     <div className="page">
-      <header className="page-header greeting">
+      <header className="dash-head">
         <div>
           <span className="eyebrow">{todayLabel}</span>
-          <h1 style={{ marginTop: 4 }}>{name ? `안녕하세요, ${name}님` : "안녕하세요"}</h1>
-          <p>{todayMission.headline}</p>
+          <h1>{name ? `${name}님, 안녕하세요` : "안녕하세요"}</h1>
         </div>
-        {gamification?.streakDays ? (
-          <span className="badge badge-warning" style={{ height: 30, fontSize: 13 }}>
-            <span className="dot dot-warning" aria-hidden="true" />
-            {gamification.streakDays}일 연속 학습
-          </span>
-        ) : null}
+        <dl className="status-strip" aria-label="학습 현황">
+          <div>
+            <dt>수능</dt>
+            <dd>D-{stats.daysLeft}</dd>
+          </div>
+          <div>
+            <dt>수학 목표</dt>
+            <dd>{stats.targetScore}점</dd>
+          </div>
+          <div>
+            <dt>준비도</dt>
+            <dd>{stats.readiness}%</dd>
+          </div>
+          {gamification?.streakDays ? (
+            <div>
+              <dt>연속 학습</dt>
+              <dd>{gamification.streakDays}일</dd>
+            </div>
+          ) : null}
+        </dl>
       </header>
 
-      <section className="stats-grid" aria-label="학습 현황">
-        <div className="card stat">
-          <span className="stat-label">수능까지</span>
-          <span className="stat-value">D-{stats.daysLeft}</span>
-          <span className="stat-foot">주 {stats.weeklyStudyHours}시간 계획</span>
-        </div>
-        <div className="card stat">
-          <span className="stat-label">수학 목표</span>
-          <span className="stat-value">
-            {stats.targetScore}
-            <small>점</small>
-          </span>
-          <span className="stat-foot">원점수 기준</span>
-        </div>
-        <div className="card stat">
-          <span className="stat-label">오늘 학습</span>
-          <span className="stat-value">
-            {doneCount}
-            <small>/ {todayPlan.tasks.length}개</small>
-          </span>
-          <span className="stat-foot">목표 {stats.todayMinutes}분</span>
-        </div>
-        <div className="card stat">
-          <span className="stat-label">수능 준비도</span>
-          <span className="stat-value">
-            {stats.readiness}
-            <small>%</small>
-          </span>
-          <Progress value={stats.readiness} size="sm" tone="auto" label="수능 준비도" />
-        </div>
-      </section>
+      <nav className="page-tabs" role="tablist" aria-label="대시보드 보기">
+        {TABS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            className={tab === item.id ? "active" : ""}
+            onClick={() => setTab(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
-      <div className="grid-main">
+      {tab === "today" ? (
         <div className="stack-lg">
-          <section>
-            <div className="section-head">
-              <h2>이어서 학습</h2>
-            </div>
-            <article className="card continue-card">
-              <div className="continue-thumb" aria-hidden="true">
-                <span>AI 칠판 강의</span>
-                <strong>{nextLessonName}</strong>
-                <span className="eq">f′(x) = lim (h→0) …</span>
-              </div>
-              <div className="continue-body">
-                <div>
-                  <span className="badge badge-primary">{todayMission.activeTrack || "오늘 강의"}</span>
-                  <h3 style={{ marginTop: 10 }}>{currentTask?.title ?? activeContent?.lessonTitle ?? "추천 강의를 준비하고 있어요"}</h3>
-                </div>
-                <div className="meta">
-                  {currentTask ? <span>{currentTask.minutes}분</span> : null}
-                  {!currentTask && activeContent ? (
-                    <span>
-                      {activeContent.problemSetTitle} · {activeContent.problemCount}문항
-                    </span>
-                  ) : null}
-                </div>
-                <div className="row">
-                  {currentTask ? (
-                    <TaskLaunchButton task={currentTask} className="btn btn-primary" />
-                  ) : (
-                    <Link className="btn btn-primary" href="/lesson">
-                      강의 시작
-                    </Link>
-                  )}
-                  <Link className="btn btn-secondary" href="/practice">
-                    문제 풀기
+          <section className="now-card">
+            <div className="now-main">
+              <span className="now-label">
+                지금 할 공부{currentIndex >= 0 ? ` · 오늘 ${currentIndex + 1}/${todayPlan.tasks.length}` : ""}
+              </span>
+              <h2>{currentTask ? shortTitle(currentTask.title) : activeContent?.lessonTitle ?? "오늘 학습을 모두 마쳤어요"}</h2>
+              <p className="now-meta">
+                {currentTask
+                  ? `${todayMission.activeTrack} · ${taskKind(currentTask.type).label} ${currentTask.minutes}분`
+                  : "내일 계획은 '이번 주' 탭에서 볼 수 있어요."}
+              </p>
+              <div className="row" style={{ marginTop: 20 }}>
+                {currentTask ? (
+                  <TaskLaunchButton task={currentTask} className="btn btn-primary btn-lg" />
+                ) : (
+                  <Link className="btn btn-primary btn-lg" href="/lesson">
+                    강의실 가기
                   </Link>
-                </div>
+                )}
+                <Link className="btn btn-ghost" href="/practice">
+                  문제만 풀기
+                </Link>
               </div>
-            </article>
+            </div>
+            {dashboard.coachMessage ? (
+              <aside className="sticky-note" aria-label="선생님 메모">
+                <span className="sticky-note-label">선생님 메모</span>
+                <p>{dashboard.coachMessage}</p>
+              </aside>
+            ) : null}
           </section>
 
-          <section className="card">
-            <div className="card-header">
-              <div>
-                <h3>오늘의 학습</h3>
-                <p>{todayPlan.focus}</p>
-              </div>
-              <span className="muted" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
-                {doneCount}/{todayPlan.tasks.length} 완료
+          <section>
+            <div className="section-head">
+              <h2>오늘의 순서</h2>
+              <span className="link">
+                {doneCount}/{todayPlan.tasks.length} 완료 · 목표 {stats.todayMinutes}분
               </span>
             </div>
-            <div className="task-list" style={{ marginTop: 12 }}>
-              {todayPlan.tasks.map((task) => (
-                <TaskRow key={task.id} task={task} />
+            <ol className="day-steps">
+              {todayPlan.tasks.map((task, index) => (
+                <TodayStep key={task.id} task={task} index={index} />
               ))}
-            </div>
-          </section>
-
-          <section>
-            <div className="section-head">
-              <h2>과목별 학습</h2>
-              <span className="link">숙련도 점수 기준</span>
-            </div>
-            <div className="grid-3">
-              {tracks.map((track) => (
-                <Link key={track.id} href={`/dashboard/${track.id}`} className="card card-link course-card">
-                  <div className="course-card-top">
-                    <div>
-                      <h3>{track.title}</h3>
-                      <p className="sub">{track.subtitle}</p>
-                    </div>
-                    <span className="course-score">
-                      {track.averageScore}
-                      <small>점</small>
-                    </span>
-                  </div>
-                  <Progress value={track.averageScore} size="sm" tone="auto" label={`${track.title} 숙련도`} />
-                  <div className="course-card-foot">
-                    <span className="weak">
-                      약점 <b>{track.weakUnitTitle}</b>
-                    </span>
-                    <span>{track.units.length}개 단원</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            </ol>
           </section>
         </div>
+      ) : null}
 
-        <aside className="stack">
-          {dashboard.coachMessage ? (
-            <section className="card card-pad-sm">
-              <div className="row" style={{ marginBottom: 8 }}>
-                <span className="avatar" aria-hidden="true">
-                  AI
+      {tab === "week" ? (
+        <section className="card">
+          <div className="card-header">
+            <div>
+              <h3>이번 주 계획</h3>
+              <p>주 {stats.weeklyStudyHours}시간 기준으로 나눴어요</p>
+            </div>
+          </div>
+          <ol className="week-table">
+            {weeklyPlan.slice(0, 7).map((day) => (
+              <li key={day.date} className={day.label === "오늘" ? "is-today" : ""}>
+                <span className="week-label">{day.label}</span>
+                <div>
+                  <strong>{day.theme}</strong>
+                  <span>{day.tasks.map((task) => shortTitle(task.title)).join(" → ")}</span>
+                </div>
+                <span className="week-min">
+                  {day.minutesTarget ?? day.minutes_target ?? day.tasks.reduce((sum, t) => sum + t.minutes, 0)}분
                 </span>
-                <strong style={{ fontSize: 14 }}>오늘의 코멘트</strong>
-              </div>
-              <p className="text-secondary" style={{ fontSize: 14 }}>
-                {dashboard.coachMessage}
-              </p>
-            </section>
-          ) : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
-          <section className="card card-pad-sm">
-            <h3 style={{ fontSize: 15, marginBottom: 12 }}>약점 단원</h3>
+      {tab === "subjects" ? (
+        <div className="stack-lg">
+          <section className="weak-band">
+            <strong>먼저 채울 단원</strong>
             <div className="weak-list">
               {todayMission.weakUnits.map((unit) => (
                 <span key={unit} className="badge badge-danger">
@@ -246,38 +222,35 @@ export default function DashboardPage() {
                 </span>
               ))}
             </div>
+            <Link className="btn btn-ghost btn-sm" href="/review" style={{ marginLeft: "auto" }}>
+              오답노트 {dashboard.recentMistakes?.length ?? 0}개 →
+            </Link>
           </section>
-
-          <section className="card card-pad-sm">
-            <h3 style={{ fontSize: 15, marginBottom: 12 }}>이번 주 계획</h3>
-            <div className="week-list">
-              {weeklyPlan.slice(0, 7).map((day) => (
-                <div key={day.date} className="week-day">
-                  <span className={`date ${day.label === "오늘" ? "today" : ""}`}>{day.label}</span>
+          <div className="grid-3">
+            {tracks.map((track) => (
+              <Link key={track.id} href={`/dashboard/${track.id}`} className="card card-link course-card">
+                <div className="course-card-top">
                   <div>
-                    <strong>{day.theme}</strong>
-                    <span>
-                      학습 {day.tasks.length}개 · {day.minutesTarget ?? day.minutes_target ?? day.tasks.reduce((sum, t) => sum + t.minutes, 0)}분
-                    </span>
+                    <h3>{track.title}</h3>
+                    <p className="sub">{track.subtitle}</p>
                   </div>
+                  <span className="course-score">
+                    {track.averageScore}
+                    <small>점</small>
+                  </span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <Link className="card card-link card-pad-sm" href="/review">
-            <div className="row-between">
-            <div>
-              <strong style={{ fontSize: 15 }}>오답노트</strong>
-              <p className="muted" style={{ fontSize: 13 }}>
-                최근 틀린 문제 {dashboard.recentMistakes?.length ?? 0}개
-              </p>
-            </div>
-            <span aria-hidden="true">→</span>
-            </div>
-          </Link>
-        </aside>
-      </div>
+                <Progress value={track.averageScore} size="sm" tone="auto" label={`${track.title} 숙련도`} />
+                <div className="course-card-foot">
+                  <span className="weak">
+                    약점 <b>{track.weakUnitTitle}</b>
+                  </span>
+                  <span>{track.units.length}개 단원</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
