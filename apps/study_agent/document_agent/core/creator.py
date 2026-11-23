@@ -9,6 +9,14 @@ logger = logging.getLogger(__name__)
 
 _SUPPLEMENT_MARKER = "### 💡 더 알아보기"
 
+
+class SectionGenerationError(Exception):
+    """LLM 호출 자체가 실패해 섹션 본문을 만들지 못한 경우.
+
+    호출자가 '이미지 전용 페이지' 같은 다른 실패와 구분해 처리할 수 있도록
+    오류 문구를 본문처럼 돌려주지 않고 예외로 올린다.
+    """
+
 _SYSTEM = r"""# Role
 너는 복잡한 전공 지식을 대학생들에게 쉽고 체계적으로 전달하는 "친절하고 전문적인 대학교 강사"야.
 주어진 [자료]를 바탕으로, 학생들의 자기주도 학습을 돕는 '학습 가이드 북'의 한 섹션을 작성해야 해.
@@ -217,4 +225,4 @@ async def create_section(
         return result
     except Exception as e:
         logger.warning(f"Creator 실패 (섹션: {section['title']}): {e}")
-        return f"## {section['title']}\n\n자료 생성 중 오류가 발생했습니다."
+        raise SectionGenerationError(str(e)) from e

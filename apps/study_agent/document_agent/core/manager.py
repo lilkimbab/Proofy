@@ -22,6 +22,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 MATERIALS_DIR = os.getenv("MATERIALS_DIR") or os.path.join(_HERE, "..", "generated_materials")
 
 _SECTION_CONCURRENCY = int(os.getenv("SECTION_CONCURRENCY", "3"))
+# 원문 텍스트가 이보다 짧을 때만 '이미지 전용 페이지'로 판단한다 (_has_body 기준과 동일).
+_MIN_SOURCE_CHARS_FOR_TEXT_PAGE = 80
 
 
 def _has_body(section_text: str) -> bool:
@@ -212,33 +214,10 @@ class StudyManager:
             for c in chunks
         ]
 
-        section_text = await creator.create_section(
-            self._llm, section, chunks, image_chunks, complete_mode=True,
-        )
+        pages = sorted({c["page"] for c in chunks})
+        page_str = ", ".join(f"p.{p}" for p in pages)
 
-        warnings: list[str] = []
-        vresult = validator.validate_section(section_text, chunks)
-        if vresult["coverage"] < 0.2:
-            section_text = await creator.create_section(
-                self._llm, section, chunks, image_chunks,
-                extra_keywords=vresult["missing_keywords"],
-                complete_mode=True,
-            )
-            if validator.validate_section(section_text, chunks)["coverage"] < 0.2:
-                warnings.append(f"'{section['title']}' 섹션의 키워드 커버리지가 낮습니다")
-        elif vresult["coverage"] < 0.4:
-            warnings.append(f"'{section['title']}' 섹션의 키워드 커버리지가 낮습니다")
-
-        # heading만 남은 경우: 이미지 전용 페이지 등으로 텍스트 추출 실패
-        if not _has_body(section_text):
-            pages = sorted({c["page"] for c in chunks})
-            page_str = ", ".join(f"p.{p}" for p in pages)
-            section_text = (
-                f"## {section['title']}\n\n"
-                f"> ⚠️ 해당 페이지({page_str})의 내용은 대부분 이미지로 구성되어 있어 "
-                f"텍스트 추출이 어렵습니다. 원본 PDF의 해당 페이지를 직접 확인해 주세요.\n"
-            )
-            warnings.append(f"'{section['title']}' 섹션: 이미지 전용 페이지로 텍스트 생성 실패 ({page_str})")
+        def _fallback(section_text: str, warning: str, llm_failed: bool) -> dict:
             return {
                 "section_text": section_text,
                 "section_data": {
@@ -255,8 +234,64 @@ class StudyManager:
                 },
                 "image_map_entries": image_map_local,
                 "source_entries": source_entries,
-                "warnings": warnings,
+                "warnings": [warning],
+                "llm_failed": llm_failed,
             }
+
+        def _llm_failure_fallback(reason: str) -> dict:
+            # LLM이 실패해도 업로드한 원문은 그대로 보여 준다.
+            original = "\n\n".join(c["text"].strip() for c in chunks if c.get("text", "").strip())
+            section_text = (
+                f"## {section['title']}\n\n"
+                f"> ⚠️ AI 설명을 만들지 못해 원문을 그대로 보여 드려요. "
+                f"(LLM 연결 또는 API 크레딧을 확인해 주세요)\n\n"
+                f"{original}\n"
+            )
+            return _fallback(
+                section_text,
+                f"'{section['title']}' 섹션: AI 설명 생성 실패, 원문으로 대체 ({reason[:120]})",
+                llm_failed=True,
+            )
+
+        try:
+            section_text = await creator.create_section(
+                self._llm, section, chunks, image_chunks, complete_mode=True,
+            )
+        except creator.SectionGenerationError as e:
+            return _llm_failure_fallback(str(e))
+
+        warnings: list[str] = []
+        vresult = validator.validate_section(section_text, chunks)
+        if vresult["coverage"] < 0.2:
+            try:
+                section_text = await creator.create_section(
+                    self._llm, section, chunks, image_chunks,
+                    extra_keywords=vresult["missing_keywords"],
+                    complete_mode=True,
+                )
+            except creator.SectionGenerationError as e:
+                return _llm_failure_fallback(str(e))
+            if validator.validate_section(section_text, chunks)["coverage"] < 0.2:
+                warnings.append(f"'{section['title']}' 섹션의 키워드 커버리지가 낮습니다")
+        elif vresult["coverage"] < 0.4:
+            warnings.append(f"'{section['title']}' 섹션의 키워드 커버리지가 낮습니다")
+
+        if not _has_body(section_text):
+            source_chars = sum(len(c.get("text", "").strip()) for c in chunks)
+            if source_chars < _MIN_SOURCE_CHARS_FOR_TEXT_PAGE:
+                # 원문에서 텍스트가 거의 안 나온 경우에만 이미지 전용 페이지로 본다.
+                section_text = (
+                    f"## {section['title']}\n\n"
+                    f"> ⚠️ 해당 페이지({page_str})의 내용은 대부분 이미지로 구성되어 있어 "
+                    f"텍스트 추출이 어렵습니다. 원본 PDF의 해당 페이지를 직접 확인해 주세요.\n"
+                )
+                return _fallback(
+                    section_text,
+                    f"'{section['title']}' 섹션: 이미지 전용 페이지로 텍스트 생성 실패 ({page_str})",
+                    llm_failed=False,
+                )
+            # 원문 텍스트는 충분한데 생성 결과가 비어 있으면 LLM 응답 문제로 본다.
+            return _llm_failure_fallback("LLM 응답 본문이 비어 있음")
 
         intent = section.get("intent", "definition")
         grounding_issues, flashcards = await self._enrich_section(section_text, chunks, intent)
@@ -381,11 +416,28 @@ class StudyManager:
                 "warnings": warnings,
                 "generated_at": _now_iso(),
             }
+            llm_failed = sum(1 for r in results if r.get("llm_failed"))
+            material["llm_failed_sections"] = llm_failed
             with open(os.path.join(doc_dir, "material.json"), "w", encoding="utf-8") as f:
                 json.dump(material, f, ensure_ascii=False, indent=2)
 
-            self._update(task_id, status="DONE", progress=1.0, message="완료", completed_at=_now_iso())
-            logger.info(f"[{task_id}] 업로드 파이프라인 완료: doc_id={doc_id}")
+            if llm_failed == len(results):
+                # 원문은 material.json에 남겨 두되, 작업은 실패로 알린다.
+                self._update(
+                    task_id, status="FAILED", progress=1.0, completed_at=_now_iso(),
+                    message="AI 설명 생성 실패: 원문만 저장했어요",
+                    error="모든 섹션에서 LLM 호출이 실패했습니다. AI_PROVIDER, API 키, 크레딧을 확인해 주세요.",
+                )
+                logger.error(f"[{task_id}] 모든 섹션 LLM 생성 실패: doc_id={doc_id}")
+            elif llm_failed:
+                self._update(
+                    task_id, status="DONE", progress=1.0, completed_at=_now_iso(),
+                    message=f"완료 (주의: {llm_failed}/{len(results)}개 섹션은 AI 설명 없이 원문으로 대체)",
+                )
+                logger.warning(f"[{task_id}] 일부 섹션 LLM 생성 실패 {llm_failed}/{len(results)}: doc_id={doc_id}")
+            else:
+                self._update(task_id, status="DONE", progress=1.0, message="완료", completed_at=_now_iso())
+                logger.info(f"[{task_id}] 업로드 파이프라인 완료: doc_id={doc_id}")
 
         except Exception as e:
             logger.exception(f"[{task_id}] 업로드 파이프라인 오류: {e}")

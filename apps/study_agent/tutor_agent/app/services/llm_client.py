@@ -4,7 +4,9 @@ import os
 from typing import Any
 
 
-OPENAI_API_URL = "https://api.openai.com/v1"
+# OPENAI_BASE_URL로 OpenAI 호환 서버(예: Gemini의 /v1beta/openai)를 쓸 수 있다.
+# document_agent/roadmap_agent의 OpenAI SDK도 같은 환경 변수를 읽는다.
+OPENAI_API_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 
 
 def get_ai_provider() -> str:
