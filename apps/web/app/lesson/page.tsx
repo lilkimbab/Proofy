@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { LessonRoom } from "@/components/lesson-room";
+import { ErrorState, LoadingState } from "@/components/ui";
 import { useAuthGuard } from "@/components/use-auth-guard";
 import { api } from "@/lib/api";
 import type { LessonSessionResponse } from "@/lib/types";
@@ -18,30 +20,25 @@ export default function LessonPage() {
   }, [ready]);
 
   if (!ready) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>강의실 접근 권한을 확인하는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="불러오는 중" />;
   }
 
   if (error) {
     return (
-      <section className="empty-card">
-        <h2>AI 칠판 세션을 불러오지 못했습니다.</h2>
-        <p className="muted">{error}</p>
-      </section>
+      <ErrorState
+        title="강의를 불러오지 못했어요"
+        message={error}
+        action={
+          <Link className="btn btn-secondary" href="/dashboard">
+            대시보드로
+          </Link>
+        }
+      />
     );
   }
 
   if (!session) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>AI 칠판 세션을 불러오는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="강의를 불러오는 중" />;
   }
 
   return <LessonRoom session={session} />;

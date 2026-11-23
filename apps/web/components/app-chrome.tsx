@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { AppNav } from "@/components/app-nav";
+import { Brand, initials } from "@/components/ui";
 import { clearStoredSession, readStoredSession, type AuthSession } from "@/lib/auth";
+
+// These routes render their own full-screen layout (landing, onboarding, lesson player).
+const STANDALONE_ROUTES = new Set(["/", "/survey", "/diagnostic", "/lesson"]);
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -16,48 +20,43 @@ export function AppChrome({ children }: { children: ReactNode }) {
     setSession(readStoredSession());
   }, [pathname]);
 
-  const standalone =
-    pathname === "/" ||
-    pathname === "/survey" ||
-    pathname === "/diagnostic" ||
-    pathname === "/lesson";
-
-  if (standalone) {
-    return (
-      <div className={`shell ${pathname === "/lesson" ? "shell-lesson" : "shell-landing"}`}>
-        <main className={`app-shell ${pathname === "/lesson" ? "lesson-shell" : ""}`}>{children}</main>
-      </div>
-    );
+  if (STANDALONE_ROUTES.has(pathname)) {
+    return <>{children}</>;
   }
 
   return (
-    <div className="shell">
-      <header className="topbar topbar-compact">
-        <div className="topbar-copy">
-          <h1>Proofy</h1>
-        </div>
-        <div className="topbar-actions">
-          {session ? (
-            <div className="session-chip">
-              <strong>{session.displayName}</strong>
-            </div>
-          ) : null}
+    <div className="app">
+      <header className="app-header">
+        <div className="container app-header-inner">
+          <Brand href="/dashboard" />
           <AppNav />
-          {session ? (
-            <button
-              type="button"
-              className="button ghost"
-              onClick={() => {
-                clearStoredSession();
-                router.push("/");
-              }}
-            >
-              로그아웃
-            </button>
-          ) : null}
+          <div className="header-right">
+            {session ? (
+              <>
+                <span className="user-chip">
+                  <span className="avatar" aria-hidden="true">
+                    {initials(session.displayName)}
+                  </span>
+                  <span className="name">{session.displayName}</span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    clearStoredSession();
+                    router.push("/");
+                  }}
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : null}
+          </div>
         </div>
       </header>
-      <main className="app-shell">{children}</main>
+      <main className="app-main">
+        <div className="container">{children}</div>
+      </main>
     </div>
   );
 }

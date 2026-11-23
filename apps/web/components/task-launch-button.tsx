@@ -11,7 +11,7 @@ type TaskLaunchButtonProps = {
   className?: string;
 };
 
-export function TaskLaunchButton({ task, className = "button ghost" }: TaskLaunchButtonProps) {
+export function TaskLaunchButton({ task, className = "btn btn-secondary" }: TaskLaunchButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 

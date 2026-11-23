@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { MathText, difficultyLabel } from "@/components/ui";
 import { api, wsUrl } from "@/lib/api";
 import type { LessonSessionResponse } from "@/lib/types";
 
@@ -20,6 +21,8 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
   const [submitting, setSubmitting] = useState(false);
   const [movingNext, setMovingNext] = useState(false);
   const [submitSummary, setSubmitSummary] = useState<string | null>(null);
+  const [solved, setSolved] = useState<boolean | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   const selectedProblem = session.practiceProblem;
@@ -34,6 +37,8 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
     setFinalAnswer("");
     setScratchNote("");
     setSubmitSummary(null);
+    setSolved(null);
+    setSubmitError(null);
   }, [selectedProblem.id]);
 
   useEffect(() => {
@@ -54,6 +59,7 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
   async function submit() {
     if (!finalAnswer.trim()) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await api.submitPractice({
         finalAnswer,
@@ -62,10 +68,13 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
       emit(response.syncEvent.type as string, response.syncEvent);
       onSessionChange?.(response.lessonSession);
       const attempt = response.attempt as { summary?: string; solved?: boolean } | undefined;
+      setSolved(typeof attempt?.solved === "boolean" ? attempt.solved : null);
       setSubmitSummary(
         attempt?.summary ??
-          (attempt?.solved ? "채점이 완료됐습니다. 원하면 바로 다음 문항으로 넘어갈 수 있습니다." : "채점이 완료됐습니다. 다시 시도하거나 다음 문항으로 넘어갈 수 있습니다."),
+          (attempt?.solved ? "정답이에요. 다음 문제로 넘어가세요." : "아쉽지만 틀렸어요. 다시 풀어 보거나 채점 결과를 확인하세요."),
       );
+    } catch (reason) {
+      setSubmitError(reason instanceof Error ? reason.message : "제출하지 못했어요. 다시 시도해 주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -79,6 +88,7 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
       onSessionChange?.(response.lessonSession);
       if (response.moved) {
         setSubmitSummary(null);
+        setSolved(null);
       }
     } finally {
       setMovingNext(false);
@@ -86,51 +96,92 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
   }
 
   const hasNextProblem = selectedIndex >= 0 && selectedIndex + 1 < problems.length;
+  const total = problems.length || 1;
+  const position = selectedIndex >= 0 ? selectedIndex + 1 : 1;
 
   return (
-    <section className="page practice-layout">
-      <article className="panel problem-panel">
-        <div className="inline-stat-list">
-          <span>{selectedIndex >= 0 ? `${selectedIndex + 1} / ${problems.length}` : `1 / ${problems.length || 1}`}</span>
-          <span>{selectedProblem.problemType ?? "대표 유형"}</span>
-          <span>{selectedProblem.difficulty ?? "advanced"}</span>
-          {selectedProblem.isKiller ? <span>킬러 문제</span> : null}
+    <div className="page">
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">{session.unitTitle}</span>
+          <h1 style={{ marginTop: 4 }}>{session.problemSet?.title ?? "문제 풀기"}</h1>
         </div>
+        <span className="connection" title="보조 화면과 실시간으로 연결돼요">
+          <span
+            className={`dot ${connectionState === "live" ? "dot-success" : connectionState === "connecting" ? "dot-warning" : "dot-danger"}`}
+            aria-hidden="true"
+          />
+          {connectionState === "live" ? "실시간 연결됨" : connectionState === "connecting" ? "연결 중" : "연결 끊김"}
+        </span>
+      </header>
 
-        <div className="problem-statement" style={{ marginTop: 16 }}>
-          <strong>
-            {selectedIndex >= 0 ? `${selectedIndex + 1}번 문제` : "현재 문제"} · {selectedProblem.title}
-          </strong>
-          <p style={{ marginTop: 10 }}>{selectedProblem.statement}</p>
-        </div>
+      {problems.length > 1 ? (
+        <nav className="problem-nav" aria-label={`전체 ${total}문항 중 ${position}번`}>
+          {problems.map((problem, index) => (
+            <span
+              key={problem.id}
+              className={index === selectedIndex ? "current" : index < selectedIndex ? "done" : ""}
+              title={problem.title}
+            >
+              {index + 1}
+            </span>
+          ))}
+        </nav>
+      ) : null}
 
-        <div className="panel" style={{ marginTop: 16, padding: 16 }}>
-          <p className="muted">{selectedProblem.coachHint}</p>
-          <div className="outline-pill-list">
-            {selectedProblem.expectedOutline.map((item) => (
-              <span key={item} className="chip">
-                {item}
-              </span>
-            ))}
+      <div className="grid-main">
+        <article className="card problem-card">
+          <div className="head">
+            <span className="badge">
+              {position} / {total}
+            </span>
+            <span className="badge badge-outline">{selectedProblem.problemType ?? "대표 유형"}</span>
+            <span className="badge badge-outline">난이도 {difficultyLabel(selectedProblem.difficulty)}</span>
+            {selectedProblem.isKiller ? <span className="badge badge-danger">킬러</span> : null}
           </div>
-          {selectedProblem.isKiller ? (
-            <div className="answer-card" style={{ marginTop: 14 }}>
-              <strong>킬러 문제</strong>
-              <p>조건 해석과 구조 전환이 중요한 문제예요. 계산보다 먼저 어떤 구조를 만들지부터 잡아보세요.</p>
-            </div>
-          ) : null}
-        </div>
-      </article>
+          <h2>{selectedProblem.title}</h2>
+          <div className="problem-statement">
+            <MathText text={selectedProblem.statement} />
+          </div>
 
-      <article className="panel response-panel">
-        <div className="input-stack">
-          <div className="input-card">
-            <label htmlFor="final-answer">
-              <strong>최종 답 입력</strong>
-            </label>
-            <textarea
+          {selectedProblem.isKiller ? (
+            <p className="alert alert-warning" style={{ marginTop: 18 }}>
+              조건을 어떻게 해석하느냐가 핵심인 문제예요. 계산하기 전에 어떤 식을 세울지부터 정해 보세요.
+            </p>
+          ) : null}
+
+          {selectedProblem.coachHint || selectedProblem.expectedOutline.length ? (
+            <details className="hint">
+              <summary>힌트</summary>
+              <div className="hint-body">
+                {selectedProblem.coachHint ? <p>{selectedProblem.coachHint}</p> : null}
+                {selectedProblem.expectedOutline.length ? (
+                  <div className="stack-sm">
+                    <span className="field-label" style={{ fontSize: 13 }}>
+                      풀이 순서
+                    </span>
+                    <ol className="outline-steps">
+                      {selectedProblem.expectedOutline.map((item) => (
+                        <li key={item}>
+                          <MathText text={item} />
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : null}
+              </div>
+            </details>
+          ) : null}
+        </article>
+
+        <aside className="card answer-card" aria-label="답안 작성">
+          <div className="field">
+            <label htmlFor="final-answer">정답</label>
+            <input
               id="final-answer"
+              className="input-lg"
               value={finalAnswer}
+              autoComplete="off"
               onChange={(event) => {
                 setFinalAnswer(event.target.value);
                 emit("practice.answer.changed", {
@@ -138,53 +189,55 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
                   value: event.target.value,
                 });
               }}
-              placeholder={selectedProblem.finalPrompt || ""}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void submit();
+                }
+              }}
+              placeholder={selectedProblem.finalPrompt || "답을 입력하세요"}
             />
           </div>
 
-          <div className="input-card">
-            <label htmlFor="scratch-note">
-              <strong>풀이 메모</strong>
-            </label>
+          <div className="field">
+            <label htmlFor="scratch-note">풀이 메모</label>
             <textarea
               id="scratch-note"
               value={scratchNote}
               onChange={(event) => setScratchNote(event.target.value)}
-              placeholder="채점되지 않아요. 종이에 푼 핵심만 짧게 적어둬도 충분합니다."
+              placeholder="채점에는 들어가지 않아요. 풀이 과정을 간단히 적어 두면 복습할 때 도움이 돼요."
             />
           </div>
 
           {submitSummary ? (
-            <div className="answer-card">
-              <strong>채점 결과</strong>
-              <p>{submitSummary}</p>
+            <div className={`alert ${solved === true ? "alert-success" : solved === false ? "alert-error" : "alert-info"}`} role="status">
+              <div>
+                <strong>{solved === true ? "정답" : solved === false ? "오답" : "채점 완료"}</strong>
+                {submitSummary}
+              </div>
             </div>
           ) : null}
+          {submitError ? (
+            <p className="alert alert-error" role="alert">
+              {submitError}
+            </p>
+          ) : null}
 
-          <div className="button-row">
-            <button className="button primary" type="button" onClick={submit} disabled={submitting || !finalAnswer.trim()}>
-              {submitting ? "제출 중..." : participant === "main" ? "답 제출하기" : "보조 화면에서 제출"}
-            </button>
-            {participant === "main" ? (
-              <>
-                <button className="button secondary" type="button" onClick={moveNext} disabled={movingNext || !hasNextProblem}>
-                  {movingNext ? "이동 중..." : hasNextProblem ? "다음 문항으로 이동" : "마지막 문항"}
-                </button>
-                <button className="button ghost" type="button" onClick={() => router.push("/review")}>
-                  채점 보기
-                </button>
-              </>
-            ) : null}
-            <span className="chip">
-              {connectionState === "live"
-                ? "세션 연결됨"
-                : connectionState === "connecting"
-                  ? "세션 연결 중"
-                  : "세션 오프라인"}
-            </span>
-          </div>
-        </div>
-      </article>
-    </section>
+          <button className="btn btn-primary btn-lg btn-block" type="button" onClick={submit} disabled={submitting || !finalAnswer.trim()}>
+            {submitting ? "채점 중..." : participant === "main" ? "제출하기" : "이 화면에서 제출하기"}
+          </button>
+          {participant === "main" ? (
+            <div className="grid-2" style={{ gap: 8 }}>
+              <button className="btn btn-secondary" type="button" onClick={moveNext} disabled={movingNext || !hasNextProblem}>
+                {movingNext ? "이동 중..." : hasNextProblem ? "다음 문제" : "마지막 문제"}
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={() => router.push("/review")}>
+                채점 결과
+              </button>
+            </div>
+          ) : null}
+        </aside>
+      </div>
+    </div>
   );
 }

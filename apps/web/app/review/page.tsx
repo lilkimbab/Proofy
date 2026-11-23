@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { ErrorState, LoadingState, MathText } from "@/components/ui";
 import { useAuthGuard } from "@/components/use-auth-guard";
 import { api } from "@/lib/api";
 import type { ReviewResponse } from "@/lib/types";
@@ -18,133 +19,198 @@ export default function ReviewPage() {
   }, [ready]);
 
   if (!ready) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>복습 화면 권한을 확인하는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="불러오는 중" />;
   }
 
   if (error) {
     return (
-      <section className="empty-card">
-        <h2>복습 데이터를 불러오지 못했습니다.</h2>
-        <p className="muted">{error}</p>
-      </section>
+      <ErrorState
+        title="채점 결과를 불러오지 못했어요"
+        message={error}
+        action={
+          <Link className="btn btn-secondary" href="/dashboard">
+            대시보드로
+          </Link>
+        }
+      />
     );
   }
 
   if (!review) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>복습 데이터를 가져오는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="채점 결과를 불러오는 중" />;
   }
 
   if (review.empty) {
     return (
-      <section className="empty-card">
-        <h2>{review.headline}</h2>
-        <p className="muted">{review.message}</p>
-        <div className="button-row" style={{ justifyContent: "center", marginTop: 12 }}>
-          <Link className="button primary" href="/practice">
+      <ErrorState
+        title={review.headline || "아직 채점한 문제가 없어요"}
+        message={review.message ?? "문제를 풀고 제출하면 여기에서 채점 결과와 오답노트를 볼 수 있어요."}
+        action={
+          <Link className="btn btn-primary" href="/practice">
             문제 풀러 가기
           </Link>
-        </div>
-      </section>
+        }
+      />
     );
   }
 
-  const answerOnlyReview =
-    (review.goodSteps?.length ?? 0) + (review.wrongSteps?.length ?? 0) <= 1;
+  const answerOnlyReview = (review.goodSteps?.length ?? 0) + (review.wrongSteps?.length ?? 0) <= 1;
+  const tomorrow = review.tomorrowPlan;
 
   return (
-    <section className="page review-layout">
-      <article className="panel">
-        <h2 className="review-title">{review.headline}</h2>
-        <div className={`result-banner ${review.solved ? "success" : "retry"}`}>
-          {review.solved
-            ? "좋아요. 풀이 흐름이 거의 완성됐어요."
-            : "괜찮아요. 여기서부터 다시 잡아가면 됩니다."}
+    <div className="page">
+      <header className="page-header">
+        <div>
+          <h1>채점 결과</h1>
+          {review.headline ? <p>{review.headline}</p> : null}
         </div>
-        <div className="review-list">
-          {answerOnlyReview ? (
-            <article className={`feedback-card ${review.solved ? "good" : "bad"}`}>
-              <h4>최종 답 판정</h4>
-              <p>{review.solved ? "최종 답이 맞았어요. 같은 문제 묶음에서 더 어려운 문제로 이어가면 됩니다." : "최종 답이 아직 맞지 않아요. 해당 유형 장면을 다시 보고 한 번 더 도전해봐요."}</p>
-            </article>
-          ) : null}
-          {!answerOnlyReview && review.goodSteps?.map((step) => (
-            <article key={step.id} className="feedback-card good">
-              <h4>{step.label}</h4>
-              <p>{step.reason}</p>
-              <span className="review-tag">기준 답: {step.expected}</span>
-            </article>
-          ))}
-          {!answerOnlyReview && review.wrongSteps?.map((step) => (
-            <article key={step.id} className="feedback-card bad">
-              <h4>{step.label}</h4>
-              <p>{step.reason}</p>
-              <span className="review-tag">기준 답: {step.expected}</span>
-            </article>
-          ))}
+        <div className="row">
+          <Link className="btn btn-secondary" href="/lesson">
+            강의 다시 보기
+          </Link>
+          <Link className="btn btn-primary" href="/practice">
+            {review.solved ? "다음 문제 풀기" : "다시 풀기"}
+          </Link>
         </div>
-      </article>
+      </header>
 
-      <article className="panel">
-        <h2 className="review-title">다음 학습</h2>
-        {review.tomorrowPlan ? (
-          <article className="review-card">
-            <header>
+      <div className="grid-main">
+        <div className="stack">
+          <section className={`card result-hero ${review.solved ? "success" : "retry"}`}>
+            <span className="result-icon" aria-hidden="true">
+              {review.solved ? "✓" : "!"}
+            </span>
+            <div>
+              <h2 style={{ fontSize: 20 }}>{review.solved ? "정답이에요" : "아쉽게 틀렸어요"}</h2>
+              <p>
+                {review.summary ??
+                  (review.solved
+                    ? "풀이 흐름도 잘 맞았어요. 같은 묶음의 다음 문제로 넘어가세요."
+                    : "어디서 틀렸는지 아래에서 확인하고 한 번 더 풀어 보세요.")}
+              </p>
+            </div>
+          </section>
+
+          <section className="card">
+            <div className="card-header">
               <div>
-                <h4>
-                  {review.tomorrowPlan.label} · {review.tomorrowPlan.theme}
-                </h4>
-                <p className="muted">{review.tomorrowPlan.focus}</p>
+                <h3>풀이 단계별 피드백</h3>
+                <p>기준 풀이와 비교한 결과예요</p>
               </div>
-              <span className="chip">
-                {review.tomorrowPlan.minutesTarget ?? review.tomorrowPlan.minutes_target}분
-              </span>
-            </header>
-          </article>
-        ) : null}
-        {review.nextProblem ? (
-          <article className="review-card" style={{ marginTop: 12 }}>
-            <h4>다음 문제</h4>
-            <p>{review.nextProblem.nextProblemTitle}</p>
-          </article>
-        ) : null}
-        <article className="review-card" style={{ marginTop: 12 }}>
-          <h4>추천 복습 문제 묶음</h4>
-          {review.retrySet?.map((item) => <p key={item}>{item}</p>)}
-        </article>
-        {review.mistakeNotes?.length ? (
-          <article className="review-card" style={{ marginTop: 12 }}>
-            <h4>자동 오답노트</h4>
-            {review.mistakeNotes.map((note) => (
-              <div key={note.id} style={{ marginTop: 10 }}>
-                <strong>{note.problemTitle}</strong>
-                <p>{note.summary}</p>
-                <p className="muted">{note.correction}</p>
+            </div>
+            <div className="card-body stack-sm" style={{ gap: 10 }}>
+              {answerOnlyReview ? (
+                <article className={`feedback ${review.solved ? "good" : "bad"}`}>
+                  <h4>
+                    <span className={`badge ${review.solved ? "badge-success" : "badge-danger"}`}>
+                      {review.solved ? "맞음" : "틀림"}
+                    </span>
+                    최종 답
+                  </h4>
+                  <p>
+                    {review.solved
+                      ? "최종 답이 맞았어요. 같은 묶음에서 조금 더 어려운 문제로 넘어가면 돼요."
+                      : "최종 답이 틀렸어요. 관련 강의 장면을 다시 보고 한 번 더 풀어 보세요."}
+                  </p>
+                </article>
+              ) : null}
+              {!answerOnlyReview &&
+                review.wrongSteps?.map((step) => (
+                  <article key={step.id} className="feedback bad">
+                    <h4>
+                      <span className="badge badge-danger">틀림</span>
+                      {step.label}
+                    </h4>
+                    <p>{step.reason}</p>
+                    <span className="expected">
+                      기준 답 <b><MathText text={String(step.expected)} /></b>
+                    </span>
+                  </article>
+                ))}
+              {!answerOnlyReview &&
+                review.goodSteps?.map((step) => (
+                  <article key={step.id} className="feedback good">
+                    <h4>
+                      <span className="badge badge-success">맞음</span>
+                      {step.label}
+                    </h4>
+                    <p>{step.reason}</p>
+                    <span className="expected">
+                      기준 답 <b><MathText text={String(step.expected)} /></b>
+                    </span>
+                  </article>
+                ))}
+            </div>
+          </section>
+
+          {review.mistakeNotes?.length ? (
+            <section className="card">
+              <div className="card-header">
+                <div>
+                  <h3>오답노트</h3>
+                  <p>틀린 문제는 자동으로 여기에 정리돼요</p>
+                </div>
+                <span className="badge">{review.mistakeNotes.length}개</span>
               </div>
-            ))}
-          </article>
-        ) : null}
-        <div className="button-row">
-          <Link className="button primary" href="/dashboard">
-            대시보드로
-          </Link>
-          <Link className="button secondary" href="/practice">
-            다시 풀기
-          </Link>
-          <Link className="button ghost" href="/lesson">
-            강의 보기
-          </Link>
+              <div className="card-body">
+                {review.mistakeNotes.map((note) => (
+                  <div key={note.id} className="note">
+                    <strong>{note.problemTitle}</strong>
+                    <p>
+                      <MathText text={note.summary} />
+                    </p>
+                    {note.correction ? (
+                      <p className="fix">
+                        고칠 점 · <MathText text={note.correction} />
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
-      </article>
-    </section>
+
+        <aside className="stack">
+          {tomorrow ? (
+            <section className="card card-pad-sm stack-sm">
+              <div className="row-between">
+                <span className="eyebrow">{tomorrow.label} 계획</span>
+                <span className="badge">{tomorrow.minutesTarget ?? tomorrow.minutes_target}분</span>
+              </div>
+              <h3 style={{ fontSize: 16 }}>{tomorrow.theme}</h3>
+              <p className="muted" style={{ fontSize: 14 }}>
+                {tomorrow.focus}
+              </p>
+            </section>
+          ) : null}
+
+          {review.nextProblem ? (
+            <section className="card card-pad-sm stack-sm">
+              <span className="eyebrow">다음 문제</span>
+              <strong>{review.nextProblem.nextProblemTitle}</strong>
+              <Link className="btn btn-soft btn-sm" href="/practice" style={{ justifySelf: "start" }}>
+                풀러 가기
+              </Link>
+            </section>
+          ) : null}
+
+          {review.retrySet?.length ? (
+            <section className="card card-pad-sm">
+              <h3 style={{ fontSize: 15, marginBottom: 12 }}>추천 복습</h3>
+              <ul className="list-plain">
+                {review.retrySet.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <Link className="btn btn-ghost" href="/dashboard">
+            대시보드로 돌아가기
+          </Link>
+        </aside>
+      </div>
+    </div>
   );
 }

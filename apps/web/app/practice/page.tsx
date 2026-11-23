@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { PracticeForm } from "@/components/practice-form";
+import { ErrorState, LoadingState } from "@/components/ui";
 import { useAuthGuard } from "@/components/use-auth-guard";
 import { api } from "@/lib/api";
 import type { LessonSessionResponse } from "@/lib/types";
@@ -18,37 +20,26 @@ export default function PracticePage() {
   }, [ready]);
 
   if (!ready) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>계정을 확인하는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="불러오는 중" />;
   }
 
   if (error) {
     return (
-      <section className="empty-card">
-        <h2>문제 묶음을 불러오지 못했습니다.</h2>
-        <p className="muted">{error}</p>
-      </section>
+      <ErrorState
+        title="문제를 불러오지 못했어요"
+        message={error}
+        action={
+          <Link className="btn btn-secondary" href="/dashboard">
+            대시보드로
+          </Link>
+        }
+      />
     );
   }
 
   if (!session) {
-    return (
-      <section className="loading-state">
-        <div className="spinner" />
-        <p>문제 묶음을 준비하는 중입니다.</p>
-      </section>
-    );
+    return <LoadingState message="문제를 불러오는 중" />;
   }
 
-  return (
-    <PracticeForm
-      session={session}
-      participant="main"
-      onSessionChange={setSession}
-    />
-  );
+  return <PracticeForm session={session} participant="main" onSessionChange={setSession} />;
 }
