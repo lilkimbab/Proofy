@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import type { CSSProperties, KeyboardEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 
 import type { SceneObject } from "@/lib/types";
 
@@ -215,6 +215,88 @@ function SceneTable({ object, instantRender }: { object: SceneObject; instantRen
   );
 }
 
+
+const MIN_TEXT_WIDTH = 28; // % of board; narrower boxes turn Korean into one-word columns
+const LONG_TEXT_CHARS = 22;
+
+function objectText(object: SceneObject): string {
+  if (object.content) return object.content;
+  if (object.items?.length) return [object.label ?? "", ...object.items].join(" ");
+  if (object.table) return [...object.table.headers, ...object.table.rows.flat()].join(" ");
+  return object.label ?? "";
+}
+
+/** Widen narrow boxes that hold long text, keeping them inside the board. */
+function layoutFor(object: SceneObject): CSSProperties {
+  let x = object.x;
+  let w = object.w;
+  const textual = !["graph", "arrow", "badge", "metric", "heading"].includes(object.type);
+  if (textual && w !== undefined && w < MIN_TEXT_WIDTH && objectText(object).length > LONG_TEXT_CHARS) {
+    w = MIN_TEXT_WIDTH;
+    if (x !== undefined && x + w > 96) x = Math.max(2, 96 - w);
+  }
+  return {
+    left: x !== undefined ? `${x}%` : undefined,
+    top: object.y !== undefined ? `${object.y}%` : undefined,
+    width: w !== undefined ? `${w}%` : undefined,
+    height: object.h !== undefined ? `${object.h}%` : undefined,
+  };
+}
+
+/**
+ * Shrinks an object's text (down to 60%) until it fits its box, or the board
+ * below it when the box has no fixed height. Re-checks while text is written.
+ */
+function FitObject({
+  object,
+  className,
+  style,
+  children,
+  ...rest
+}: {
+  object: SceneObject;
+  className: string;
+  style: CSSProperties;
+  children: ReactNode;
+  onClick?: () => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  role?: string;
+  tabIndex?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = ref.current;
+    const board = el?.closest(".board") as HTMLElement | null;
+    if (!el || !board || typeof ResizeObserver === "undefined") return;
+    const check = () => {
+      const boardHeight = board.clientHeight;
+      const top = ((object.y ?? 0) / 100) * boardHeight;
+      const limit = object.h !== undefined ? (object.h / 100) * boardHeight : boardHeight * 0.97 - top;
+      const tooTall = el.scrollHeight > limit + 1;
+      const tooWide = el.scrollWidth > el.clientWidth + 1;
+      // tables scroll inside their own wrapper, so check that box too
+      const inner = el.querySelector<HTMLElement>(".board-table-wrap");
+      const innerOverflow = inner ? inner.scrollHeight > inner.clientHeight + 1 : false;
+      if (tooTall || tooWide || innerOverflow) setScale((current) => (current > 0.6 ? Math.max(0.6, current * 0.92) : current));
+    };
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    // fixed-height boxes (tables) don't resize while their content is written in
+    const content = el.querySelector("table");
+    if (content) observer.observe(content);
+    check();
+    return () => observer.disconnect();
+  }, [object.h, object.y, scale]);
+
+  return (
+    <div ref={ref} className={className} style={{ ...style, "--fit": scale } as CSSProperties} {...rest}>
+      {children}
+    </div>
+  );
+}
+
 export function BoardScene({
   objects,
   activeObjectId,
@@ -273,16 +355,12 @@ export function BoardScene({
       {focusFrame ? <div className="board-focus-veil" aria-hidden="true" /> : null}
       <div className="board-canvas" style={focusFrame?.canvasStyle}>
         {objects.map((object) => {
-          const style = {
-            left: object.x !== undefined ? `${object.x}%` : undefined,
-            top: object.y !== undefined ? `${object.y}%` : undefined,
-            width: object.w !== undefined ? `${object.w}%` : undefined,
-            height: object.h !== undefined ? `${object.h}%` : undefined
-          };
+          const style = layoutFor(object);
           const interactive = Boolean(onObjectSelect);
           return (
-            <div
+            <FitObject
               key={object.id}
+              object={object}
               className={`board-object board-${object.type} ${
                 activeObjectId === object.id ? "active" : ""
               } ${interactive ? "interactive" : ""}`}
@@ -308,7 +386,7 @@ export function BoardScene({
                   instant={instantRender}
                 />
               )}
-            </div>
+            </FitObject>
           );
         })}
         {focusFrame ? <div className="board-focus-ring" style={focusFrame.ringStyle} aria-hidden="true" /> : null}
