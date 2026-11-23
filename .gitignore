@@ -23,3 +23,6 @@ coverage/
 *.egg-info/
 .run_logs/
 /apps/study_agent/roadmap_agent/roadmaps/
+
+# 로컬 작업 명세서 (공개 저장소에 올리지 않음)
+/CLAUDE.md

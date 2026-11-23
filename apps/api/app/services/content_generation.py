@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from typing import Any
-from urllib import request
+from urllib import error, request
 
 from app.core.config import settings
 
@@ -38,7 +38,7 @@ class StrongLLMContentGenerator:
         self.gemini_api_key = settings.gemini_api_key
         self.gemini_model = settings.gemini_model
 
-    def build_prompt(self, spec: ContentGenerationRequest) -> dict[str, Any]:
+    def build_prompt(self, spec: ContentGenerationRequest, provider: str | None = None) -> dict[str, Any]:
         instruction = (
             "다음 조건을 만족하는 수능 수학 콘텐츠 묶음 JSON을 생성하세요.\n"
             f"- bundleId: {spec.bundle_id}\n"
@@ -57,7 +57,7 @@ class StrongLLMContentGenerator:
             "- 각 lesson scene은 title, narration, objects를 포함하세요.\n"
             "- output은 설명 없이 JSON만 반환하세요."
         )
-        if self.provider == "gemini":
+        if (provider or self.provider) == "gemini":
             return {
                 "model": self.gemini_model,
                 "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
@@ -79,7 +79,14 @@ class StrongLLMContentGenerator:
     def generate_or_prepare_job(self, spec: ContentGenerationRequest) -> dict[str, Any]:
         payload = self.build_prompt(spec)
         if self.provider == "gemini":
-            return self._generate_gemini(payload)
+            try:
+                return self._generate_gemini(payload)
+            except (error.HTTPError, error.URLError, TimeoutError):
+                # Gemini free tier is often busy (503) or out of quota; use the
+                # OpenAI-compatible provider (e.g. Groq) when it is configured.
+                if not (self.api_url and self.api_key):
+                    raise
+                payload = self.build_prompt(spec, provider="generic")
         if not self.api_url or not self.api_key:
             return {
                 "mode": "job-only",
@@ -93,6 +100,8 @@ class StrongLLMContentGenerator:
             data=body,
             headers={
                 "Content-Type": "application/json",
+                # Groq (Cloudflare) rejects urllib's default agent with 403
+                "User-Agent": "proofy-api/1.0",
                 "Authorization": f"Bearer {self.api_key}",
             },
             method="POST",
@@ -124,6 +133,8 @@ class StrongLLMContentGenerator:
             data=body,
             headers={
                 "Content-Type": "application/json",
+                # Groq (Cloudflare) rejects urllib's default agent with 403
+                "User-Agent": "proofy-api/1.0",
                 "x-goog-api-key": self.gemini_api_key,
             },
             method="POST",

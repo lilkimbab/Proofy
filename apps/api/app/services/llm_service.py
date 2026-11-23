@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 from urllib import error, request
 
 from app.core.config import settings
+
+# After a Gemini failure (503 busy, quota, timeout) skip it for a while and use the fallback provider.
+GEMINI_COOLDOWN_SECONDS = 300
+_gemini_cooldown_until = [0.0]
 
 
 def _as_sentence(text: str | None) -> str:
@@ -484,7 +489,23 @@ class LessonLLMService:
 
     def _chat(self, system_prompt: str, user_prompt: str, *, timeout_seconds: int | None = None) -> str | None:
         if self.provider == "gemini":
-            return self._chat_gemini(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+            has_fallback = bool(self.api_url and self.api_key)
+            if has_fallback and time.monotonic() < _gemini_cooldown_until[0]:
+                # Gemini failed recently; don't make every request wait for another timeout.
+                return self._chat_generic(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+            reply = self._chat_gemini(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+            if reply is None:
+                _gemini_cooldown_until[0] = time.monotonic() + GEMINI_COOLDOWN_SECONDS
+            if reply is None and has_fallback:
+                # Gemini free tier often answers 503 (busy) or runs out of daily quota;
+                # fall back to the OpenAI-compatible provider (e.g. Groq) when it is configured.
+                return self._chat_generic(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+            return reply
+        return self._chat_generic(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+
+    def _chat_generic(self, system_prompt: str, user_prompt: str, *, timeout_seconds: int | None = None) -> str | None:
+        if not self.api_url or not self.api_key:
+            return None
         body = json.dumps(
             {
                 "model": self.model,
@@ -497,6 +518,8 @@ class LessonLLMService:
         ).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
+            # Groq (Cloudflare) rejects urllib's default agent with 403
+            "User-Agent": "proofy-api/1.0",
             "Authorization": f"Bearer {self.api_key}",
         }
         req = request.Request(self.api_url, data=body, headers=headers, method="POST")
@@ -536,6 +559,8 @@ class LessonLLMService:
             data=body,
             headers={
                 "Content-Type": "application/json",
+                # Groq (Cloudflare) rejects urllib's default agent with 403
+                "User-Agent": "proofy-api/1.0",
                 "x-goog-api-key": self.gemini_api_key,
             },
             method="POST",
