@@ -14,6 +14,7 @@ from app.db.content_repository import (
     PostgresContentRepository,
 )
 from app.db.repository import MemoryRepository, PostgresRepository, Repository, ensure_state
+from app.content.lecture_copy import josa
 from app.domain.content import (
     TODAY,
     bundle_question_scene,
@@ -484,9 +485,9 @@ class DemoService:
         current_title = current_task.title if current_task else state.practice_problem_set.get("title", "오늘의 학습 흐름")
         recommended_unit = self._active_lesson_title(state)
         return {
-            "headline": f"오늘은 {current_title}부터 시작합니다.",
+            "headline": f"오늘은 {current_title}부터 시작해요.",
             "summary": (
-                "강의에서 구조를 잡고, 바로 문제를 풀고, 오답은 다음 날 계획에 자동 반영됩니다."
+                "강의를 듣고 바로 문제를 풀어요. 틀린 문제는 다음 날 계획에 자동으로 들어가요."
             ),
             "activeTrack": self._track_label_from_title(current_title),
             "recommendedUnit": recommended_unit,
@@ -899,7 +900,7 @@ class DemoService:
         answer: str,
         focus_object_id: str | None,
         *,
-        board_title: str = "같이 다시 볼 포인트",
+        board_title: str = "질문 답변",
         board_points: list[str] | None = None,
         resume_label: str = "이어서 같이 볼게요",
     ) -> dict[str, Any]:
@@ -1070,8 +1071,13 @@ class DemoService:
             )
         return scenes
 
+    @staticmethod
+    def _template_title(scene: dict[str, Any]) -> str:
+        """Title used for keyword rules: the pre-copy-edit template title when present."""
+        return str(scene.get("templateTitle") or scene.get("title") or "")
+
     def _scene_family(self, scene: dict[str, Any]) -> str:
-        title = str(scene.get("title") or "")
+        title = self._template_title(scene)
         if any(keyword in title for keyword in ("학습목표", "정의", "직관", "한 판 정리")):
             return "concept"
         if any(keyword in title for keyword in ("전략", "문제 읽기", "스캐폴드", "풀이 완성")):
@@ -1090,7 +1096,7 @@ class DemoService:
         return "general"
 
     def _scene_signature(self, scene: dict[str, Any]) -> tuple[str, str]:
-        title = re.sub(r"\s+", " ", str(scene.get("title") or "")).strip().lower()
+        title = re.sub(r"\s+", " ", self._template_title(scene)).strip().lower()
         narration = re.sub(r"\s+", " ", str(scene.get("narration") or "")).strip().lower()
         narration = narration[:140]
         return title, narration
@@ -1124,7 +1130,7 @@ class DemoService:
 
     def _student_scene(self, scene: dict[str, Any]) -> dict[str, Any]:
         clean_scene = deepcopy(scene)
-        for key in ("source", "sourcePdf", "pdfPages", "achievementCodes"):
+        for key in ("source", "sourcePdf", "pdfPages", "achievementCodes", "templateTitle"):
             clean_scene.pop(key, None)
         return clean_scene
 
@@ -1199,7 +1205,7 @@ class DemoService:
 
     def _scene_text_blob(self, scene: dict[str, Any]) -> str:
         parts = [
-            str(scene.get("title") or ""),
+            self._template_title(scene),
             str(scene.get("narration") or ""),
             str(scene.get("teachingGoal") or ""),
             str(scene.get("takeaway") or ""),
@@ -1219,7 +1225,7 @@ class DemoService:
 
     def _scene_question_score(self, scene: dict[str, Any], question: str, keywords: list[str]) -> int:
         blob = self._scene_text_blob(scene)
-        title = str(scene.get("title") or "")
+        title = self._template_title(scene)
         score = 0
         for keyword in keywords:
             lowered = keyword.lower()
@@ -1324,9 +1330,9 @@ class DemoService:
                     problem_title=str(state.practice_problem.get("title", "현재 문제")),
                     mistake_type=mistake_type,
                     trigger_step=step.label,
-                    summary=step.reason,
-                    correction=f"{step.label} 단계에서는 {step.expected} 구조를 먼저 고정하세요.",
-                    retry_prompt=f"{mistake_type}을 피하려면 같은 문제를 3줄 구조로 다시 적어보세요.",
+                    summary=f"{step.label}에서 틀렸어요. {step.reason}",
+                    correction=f"{step.label}의 기준 답은 {step.expected}입니다.",
+                    retry_prompt="같은 문제를 풀이 세 줄로 다시 적어 보세요.",
                     created_at=created_at,
                 )
             )
@@ -1422,7 +1428,7 @@ class DemoService:
         weekly_slice = state.plan[:7]
         plan_strategy = state.plan_strategy or {}
         return {
-            "headline": plan_strategy.get("headline") or "오늘은 개념-질문-문제풀이-오답노트가 한 번에 이어지는 날입니다.",
+            "headline": plan_strategy.get("headline") or "오늘 들을 강의와 풀 문제를 정리했어요.",
             "stats": {
                 "daysLeft": days_left,
                 "targetScore": state.profile.math_target_score,
@@ -1451,13 +1457,13 @@ class DemoService:
             "recentMistakes": self._recent_mistake_notes(state),
             "alerts": plan_strategy.get("weeklyFocus")
             or [
-                "질문 답변은 현재 장면과 현재 문제를 같이 읽는 LLM 경로로 생성됩니다.",
-                "오늘 강의를 끝내면 문제 풀이가 자동으로 열리고 계획도 즉시 갱신됩니다.",
-                "문제를 제출하면 오답 원인과 다음날 복습 일정이 자동으로 다시 짜입니다.",
-                "대시보드에서 단원을 바꾸면 강의와 evaluator가 함께 전환됩니다.",
+                "강의 중 질문하면 지금 보고 있는 장면과 문제를 바탕으로 답해 드려요.",
+                "오늘 강의를 마치면 문제 풀이가 열리고 계획이 바로 업데이트돼요.",
+                "문제를 제출하면 틀린 이유를 정리하고 다음 날 복습 일정을 다시 짜요.",
+                "대시보드에서 단원을 바꾸면 강의와 문제가 함께 바뀌어요.",
             ],
             "coachMessage": plan_strategy.get("coachMessage")
-            or "오늘은 계획표를 따라 강의와 문제만 수행하면 됩니다. 막히는 질문은 그 장면 위에서 바로 풀어드립니다.",
+            or "계획표 순서대로 강의를 듣고 문제를 풀면 돼요. 강의 중 막히는 부분은 칠판을 눌러 바로 질문하세요.",
             "planStrategy": plan_strategy,
             "planStrategyStatus": self._strategy_status(state),
             "strategyJobs": [
@@ -1599,13 +1605,13 @@ class DemoService:
         return {
             "score": int((correct_count / len(question_bank)) * 100) if question_bank else 0,
             "summary": (
-                f"진단 결과를 바탕으로 {weakest.title}를 가장 먼저 잡고, "
-                f"{next_two[1].title if len(next_two) > 1 else weakest.title}까지 이어서 회복하는 계획으로 다시 짰습니다."
+                f"진단 결과에 따라 {josa(weakest.title, '을')} 가장 먼저 공부하고, "
+                f"이어서 {josa(next_two[1].title if len(next_two) > 1 else weakest.title, '을')} 보강하도록 계획을 짰어요."
             ),
             "topRisks": [
-                f"{weakest.title} 개념이 가장 먼저 보강되어야 합니다.",
-                "고난도 문항일수록 첫 줄을 어떻게 시작할지 정리하는 연습이 필요합니다.",
-                "오늘 못 끝낸 일정은 다음 날 자동으로 다시 끌어옵니다.",
+                f"{weakest.title} 개념부터 보강해야 해요.",
+                "고난도 문제일수록 첫 식을 어떻게 세울지 연습이 필요해요.",
+                "오늘 못 끝낸 학습은 다음 날 계획에 자동으로 옮겨져요.",
             ],
             "recommendedTrack": state.practice_problem_set.get("title", "기본 공부 흐름"),
             "mastery": to_jsonable(state.mastery),
@@ -1813,9 +1819,9 @@ class DemoService:
             "today": to_jsonable(state.plan[0]),
             "tomorrow": to_jsonable(state.plan[1]) if len(state.plan) > 1 else None,
             "coachMessage": (
-                "정답을 맞히면 다음 문제로 자동 이동합니다. 같은 구조를 더 높은 난도로 바로 이어가세요."
+                "정답이에요. 다음 문제로 넘어가서 조금 더 어려운 문제를 풀어 보세요."
                 if solved
-                else "오늘은 복습 흐름을 열어두고, 내일은 같은 구조를 더 짧은 문제 묶음으로 다시 잡겠습니다."
+                else "틀린 문제는 복습 목록에 넣었어요. 내일 비슷한 문제로 다시 풀어 봐요."
             ),
             "nextProblem": next_problem,
         }
@@ -1833,20 +1839,20 @@ class DemoService:
                 "finalAnswer": str(payload.get("finalAnswer", "")),
             },
             summary=(
-                "최종 답안만 제출했지만 구조가 맞았습니다. 다음 문제로 자동 이어지니 같은 흐름을 유지하세요."
+                "정답이에요. 다음 문제로 넘어가세요."
                 if answer_only_mode and solved
-                else "최종 답안은 제출됐지만 정답 조건을 아직 못 맞췄습니다. 강의의 유형 분기 장면을 다시 보고 같은 문제를 재도전하세요."
+                else "답이 틀렸어요. 강의에서 이 유형을 다룬 장면을 다시 보고 한 번 더 풀어 보세요."
                 if answer_only_mode
                 else
-                "극대극소 공부 흐름이 안정됐습니다. 다음 문제에서도 후보점-부호변화-좌표 순서를 유지하세요."
+                "극대·극소를 정확히 구했어요. 다음 문제도 후보점 → 부호 변화 → 좌표 순서로 풀어 보세요."
                 if evaluation_type == "maxmin-points" and solved
-                else "극대극소 판정은 보였지만, 부호 변화와 좌표 마무리를 한 번 더 고정해야 합니다."
+                else "극대·극소 판정은 맞았지만 부호 변화와 좌표 계산에서 틀렸어요. 이 두 단계를 다시 확인해 보세요."
                 if evaluation_type == "maxmin-points"
-                else "핵심 구조는 거의 잡혔습니다. 다음 문제로 자동 이동하니 같은 풀이 흐름을 더 높은 난도로 이어가면 됩니다."
+                else "잘 풀었어요. 다음 문제는 조금 더 어려우니 같은 순서로 풀어 보세요."
                 if solved and next_problem
-                else "핵심 구조는 거의 잡혔습니다. 이제 부호와 접점 계산을 같은 풀이 흐름으로 묶으면 안정됩니다."
+                else "잘 풀었어요. 부호와 접점 계산만 한 번 더 확인하면 완벽해요."
                 if solved
-                else "접선 문제의 순서는 보였지만, 기울기와 접점을 분리해서 적는 습관이 더 필요합니다."
+                else "풀이 순서는 맞았어요. 기울기와 접점을 따로 적는 연습이 더 필요해요."
             ),
             recommended_scenes=["scene-slope", "scene-point"],
             recovery_plan=recovery_plan,
@@ -1912,8 +1918,8 @@ class DemoService:
         if attempt is None:
             return {
                 "empty": True,
-                "headline": "아직 풀이 기록이 없습니다.",
-                "message": "강의를 들은 뒤 문제를 풀면 이곳에 내 풀이와 추천 풀이 비교가 생깁니다.",
+                "headline": "아직 푼 문제가 없어요",
+                "message": "강의를 듣고 문제를 풀면 여기에서 채점 결과를 볼 수 있어요.",
             }
         attempted_problem = self._lookup_problem_by_id(attempt.problem_id) or {}
         evaluation_type = attempted_problem.get("evaluationType", "tangent-line")
@@ -1924,7 +1930,7 @@ class DemoService:
             self.repository.save_state(state)
         return {
             "empty": False,
-            "headline": "내 풀이를 추천 풀이 흐름과 비교합니다.",
+            "headline": f"{attempted_problem.get('title') or '최근 문제'} 문제를 채점했어요.",
             "attemptId": attempt.id,
             "solved": attempt.solved,
             "summary": attempt.summary,
@@ -1932,14 +1938,14 @@ class DemoService:
             "goodSteps": to_jsonable(good_steps),
             "retrySet": [
                 "극값 후보 재확인 문제 2문항",
-                "부호 변화 판정 미니 퀴즈 1문항",
-                "극대점/극소점 좌표화 3분 복기",
+                "부호 변화 판정 퀴즈 1문항",
+                "극대점·극소점 좌표 구하기 3분 정리",
             ]
             if evaluation_type == "maxmin-points"
             else [
                 "도함수 부호 재확인 문제 2문항",
-                "접점 좌표 계산 미니 퀴즈 1문항",
-                "직선식 정리 3분 복기",
+                "접점 좌표 계산 퀴즈 1문항",
+                "직선의 방정식 3분 정리",
             ],
             "tomorrowPlan": attempt.recovery_plan.get("tomorrow"),
             "nextProblem": attempt.recovery_plan.get("nextProblem"),

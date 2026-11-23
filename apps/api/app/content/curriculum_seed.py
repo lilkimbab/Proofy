@@ -5,6 +5,8 @@ from fractions import Fraction
 from math import comb, factorial
 import re
 
+from app.content.lecture_copy import fix_josa, polish_text, polish_title
+
 
 PDF_SOURCE_PATH = "[별책8] 수학과 교육과정.pdf"
 
@@ -1708,64 +1710,43 @@ def _problem_difficulty_badge(problem: dict) -> str:
     return "CORE TYPE"
 
 
-def _soften_teacher_text(text: str) -> str:
-    softened = text
-    replacements = [
-        ("정리합니다.", "정리해볼게요."),
-        ("정리합니다", "정리해볼게요"),
-        ("이해합니다.", "이해해볼게요."),
-        ("이해합니다", "이해해볼게요"),
-        ("읽습니다.", "읽어볼게요."),
-        ("읽습니다", "읽어볼게요"),
-        ("봅니다.", "볼게요."),
-        ("봅니다", "볼게요"),
-        ("잡습니다.", "잡아볼게요."),
-        ("잡습니다", "잡아볼게요"),
-        ("교정합니다.", "바로잡아볼게요."),
-        ("교정합니다", "바로잡아볼게요"),
-        ("연결합니다.", "연결해볼게요."),
-        ("연결합니다", "연결해볼게요"),
-        ("익힙니다.", "익혀볼게요."),
-        ("익힙니다", "익혀볼게요"),
-        ("훈련합니다.", "연습해볼게요."),
-        ("훈련합니다", "연습해볼게요"),
-        ("분리합니다.", "나눠서 볼게요."),
-        ("분리합니다", "나눠서 볼게요"),
-        ("완성합니다.", "완성해볼게요."),
-        ("완성합니다", "완성해볼게요"),
-        ("확인합니다.", "확인해볼게요."),
-        ("확인합니다", "확인해볼게요"),
-        ("비교합니다.", "비교해볼게요."),
-        ("비교합니다", "비교해볼게요"),
-        ("고정합니다.", "먼저 잡아볼게요."),
-        ("고정합니다", "먼저 잡아볼게요"),
-        ("설명합니다.", "설명해볼게요."),
-        ("설명합니다", "설명해볼게요"),
+_SCENE_TEXT_FIELDS = ["narration", "teachingGoal", "takeaway", "examCue", "practiceBridge", "resumeLabel"]
+
+
+def _polish_strings(value):
+    if isinstance(value, str):
+        return fix_josa(value)
+    if isinstance(value, list):
+        return [_polish_strings(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _polish_strings(item) for key, item in value.items()}
+    return value
+
+
+def _polish_scene(scene: dict) -> dict:
+    """Copy-edit one scene: rewrite template sentences, fix particles, rename titles."""
+    polished = deepcopy(scene)
+    if isinstance(polished.get("title"), str):
+        new_title = polish_title(polished["title"])
+        if new_title != polished["title"]:
+            # demo_service classifies scenes by keywords in the template title
+            # (scene families, question routing); keep it so that logic is unchanged.
+            polished["templateTitle"] = polished["title"]
+        polished["title"] = new_title
+    for field in _SCENE_TEXT_FIELDS:
+        if isinstance(polished.get(field), str):
+            polished[field] = polish_text(polished[field])
+    polished["objects"] = [
+        {key: (_polish_strings(value) if key in {"content", "label", "items", "table"} else value) for key, value in obj.items()}
+        for obj in polished.get("objects", [])
     ]
-    for before, after in replacements:
-        softened = softened.replace(before, after)
-    softened = softened.replace("먼저 먼저", "먼저")
-    return softened
+    return polished
 
 
-def _soften_scene(scene: dict) -> dict:
-    softened = deepcopy(scene)
-    for field in ["narration", "teachingGoal", "takeaway", "examCue", "practiceBridge"]:
-        value = softened.get(field)
-        if isinstance(value, str):
-            softened[field] = _soften_teacher_text(value)
-    for obj in softened.get("objects", []):
-        if obj.get("type") in {"callout", "badge"} and isinstance(obj.get("content"), str):
-            obj["content"] = _soften_teacher_text(obj["content"])
-        if obj.get("type") == "checklist":
-            if isinstance(obj.get("label"), str):
-                obj["label"] = _soften_teacher_text(obj["label"])
-            if isinstance(obj.get("items"), list):
-                obj["items"] = [
-                    _soften_teacher_text(item) if isinstance(item, str) else item
-                    for item in obj["items"]
-                ]
-    return softened
+def _polish_lesson_pack(pack: dict) -> dict:
+    polished = dict(pack)
+    polished["scenes"] = [_polish_scene(scene) for scene in pack.get("scenes", [])]
+    return polished
 
 
 def _outline_preview(problem: dict, limit: int = 4) -> list[str]:
@@ -9340,7 +9321,7 @@ def _lesson_pack(unit: dict) -> dict:
             "title": f"{unit['domainTitle']} 오프닝",
             "narration": (
                 f"{unit['domainTitle']}은(는) {unit['coreIdea']} "
-                "수능에서는 개념을 길게 암기하기보다, 어떤 식을 먼저 세우고 무엇을 확인할지 빠르게 잡는 감각이 더 중요합니다."
+                "수능에서는 개념을 외우는 것보다, 문제를 보고 어떤 식을 먼저 세울지 빨리 판단하는 게 중요해요."
             ),
             "teachingGoal": "단원 전체를 어떤 순서로 보면 좋은지 바로 잡아볼까요?",
             "takeaway": "이 단원은 개념 자체보다 문제에 들어가는 순서가 점수와 더 직접 연결됩니다.",
@@ -9350,7 +9331,7 @@ def _lesson_pack(unit: dict) -> dict:
             "objects": [
                 {"id": f"{unit['id']}-h1", "type": "heading", "x": 6, "y": 10, "w": 48, "content": unit["domainTitle"]},
                 {"id": f"{unit['id']}-note", "type": "callout", "x": 8, "y": 24, "w": 50, "content": unit["coreIdea"], "delayMs": 180},
-                {"id": f"{unit['id']}-metric-1", "type": "metric", "x": 62, "y": 24, "w": 22, "content": f"핵심 요소 {len(unit['contentElements'])}개", "delayMs": 260},
+                {"id": f"{unit['id']}-metric-1", "type": "metric", "x": 62, "y": 24, "w": 22, "content": f"핵심 개념 {len(unit['contentElements'])}개", "delayMs": 260},
                 {"id": f"{unit['id']}-route", "type": "badge", "x": 8, "y": 62, "w": 46, "content": "개념 → 예제 → 킬러 → 실전", "delayMs": 420},
             ],
         },
@@ -9374,11 +9355,11 @@ def _lesson_pack(unit: dict) -> dict:
                     "w": 56,
                     "h": 40,
                     "table": {
-                        "headers": ["기준", "오늘 붙잡을 것", "왜 중요한가"],
+                        "headers": ["", "기억할 것", "이유"],
                         "rows": [
-                            ["1", f"{agenda[0]}의 첫 줄", "출발점이 잡혀야 긴 문제도 같은 기준으로 읽을 수 있습니다"],
-                            ["2", f"{agenda[1]}의 판단 기준", "중간에 무엇을 보고 결론을 낼지 미리 정해둡니다"],
-                            ["3", f"{agenda[2]}의 검산 기준", "끝줄 형식과 버려지는 해를 마지막까지 놓치지 않게 합니다"],
+                            ["1", f"{agenda[0]}: 첫 식 세우기", "첫 식이 정해지면 긴 문제도 같은 방법으로 풀 수 있어요"],
+                            ["2", f"{agenda[1]}: 판단 기준", "중간에 무엇을 보고 결론을 낼지 미리 정해 둬요"],
+                            ["3", f"{agenda[2]}: 검산", "답의 형태와 버려야 할 해를 놓치지 않게 해요"],
                         ],
                     },
                 },
@@ -9418,7 +9399,7 @@ def _lesson_pack(unit: dict) -> dict:
             "courseId": unit["courseId"],
             "courseTitle": unit["courseTitle"],
         },
-        "scenes": [_soften_scene(scene) for scene in raw_scenes],
+        "scenes": raw_scenes,
     }
 
 
@@ -9598,6 +9579,6 @@ def build_curriculum_bundle() -> dict:
                 ],
             },
         },
-        "lessonPacks": lesson_packs,
+        "lessonPacks": [_polish_lesson_pack(pack) for pack in lesson_packs],
         "problemSets": problem_sets,
     }

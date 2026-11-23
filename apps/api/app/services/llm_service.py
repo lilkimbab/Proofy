@@ -9,6 +9,14 @@ from urllib import error, request
 from app.core.config import settings
 
 
+def _as_sentence(text: str | None) -> str:
+    """Trim scene text and make sure it ends like a sentence."""
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return ""
+    return cleaned if cleaned[-1] in ".?!…" or cleaned.endswith(("요", "다")) else f"{cleaned}."
+
+
 @dataclass
 class LLMReply:
     text: str
@@ -23,7 +31,7 @@ class LessonInterruptionPlan:
     response_mode: str = "answer"
     scene_strategy: str = "current"
     micro_scene_key: str | None = None
-    board_title: str = "같이 다시 볼 포인트"
+    board_title: str = "질문 답변"
     board_points: list[str] | None = None
     branch_outline: list[str] | None = None
     resume_label: str = "이어서 같이 볼게요"
@@ -151,32 +159,36 @@ class LessonLLMService:
             "",
         )
         anchor = selected_summary or (scene_objects[0]["summary"] if scene_objects else "")
-        takeaway = scene_takeaway or scene_goal or narration or scene_title
-        exam_point = scene_exam_cue or "지금 장면의 기준 식과 조건을 먼저 고정하는 것"
-        problem_first_line = practice_statement.split(".")[0].strip() if practice_statement else "현재 문제의 첫 줄"
+        anchor = anchor.strip().splitlines()[0][:60] if anchor.strip() else ""
+        # Scene fields are full sentences; keep them as separate sentences instead of
+        # splicing them into a template (which produced "…됩니다.라는 뜻이에요").
+        takeaway = _as_sentence(scene_takeaway or narration or scene_goal or scene_title)
+        exam_cue = _as_sentence(scene_exam_cue)
+        problem_first_line = practice_statement.split(". ")[0].strip().rstrip(".") if practice_statement else ""
+        problem_line = (
+            f"지금 풀고 있는 문제(“{problem_first_line}”)도 같은 방식으로 시작해 보세요."
+            if problem_first_line
+            else ""
+        )
+        anchor_line = f"칠판의 ‘{anchor}’ 부분을 다시 보면 이해가 쉬워요." if anchor else ""
 
         if any(token in question for token in ("왜", "원리", "의미", "개념")):
-            return (
-                f"핵심은 {takeaway}라는 뜻이에요. "
-                f"즉, 여기서는 {exam_point}를 먼저 잡아야 하고, {anchor or '현재 칠판의 식'}이 그 기준이 됩니다. "
-                f"그래서 문제로 돌아가면 {problem_first_line}에서 바로 그 기준을 먼저 적으면 훨씬 덜 흔들립니다."
-            )
-        if any(token in question for token in ("어떻게", "순서", "풀이", "접근", "과정")):
-            return (
-                f"순서는 복잡하지 않아요. 먼저 {exam_point}를 확인하고, 다음으로 {anchor or '핵심 식'}을 적고, 마지막에 현재 문제 조건에 얹으면 됩니다. "
-                f"즉 지금 문제에서는 {problem_first_line}부터 같은 흐름으로 시작하면 돼요."
-            )
-        if any(token in question for token in ("기초", "처음", "다시", "천천히")):
-            return (
-                f"기초부터 다시 보면, 먼저 {takeaway}를 한 문장으로 잡는 게 시작이에요. "
-                f"그다음 {anchor or '현재 칠판의 핵심 식'}을 보고 왜 그 식이 먼저 나오는지만 이해하면 됩니다. "
-                f"문제로 돌아가면 {problem_first_line} 앞에서 그 기준 문장부터 다시 떠올려 볼까요?"
-            )
-        return (
-            f"지금 질문의 답은 {takeaway}를 먼저 기준으로 잡으면 된다는 거예요. "
-            f"여기서는 {exam_point}가 가장 중요하고, {anchor or '칠판의 핵심 식'}이 그 출발점입니다. "
-            f"이 기준으로 다시 보면 현재 문제도 훨씬 자연스럽게 이어집니다."
-        )
+            parts = [f"이 장면에서 기억할 핵심은 이거예요. {takeaway}", anchor_line, exam_cue, problem_line]
+        elif any(token in question for token in ("어떻게", "순서", "풀이", "접근", "과정")):
+            parts = [
+                "순서대로 정리해 볼게요. ① 조건에서 필요한 식을 찾고, ② 그 식을 세운 다음, ③ 문제 조건을 대입해서 답을 확인하면 돼요.",
+                anchor_line,
+                problem_line,
+            ]
+        elif any(token in question for token in ("기초", "처음", "다시", "천천히")):
+            parts = [
+                f"처음부터 다시 볼게요. {takeaway}",
+                f"칠판의 ‘{anchor}’에서 이 식이 왜 먼저 나오는지부터 확인해 보세요." if anchor else "",
+                problem_line,
+            ]
+        else:
+            parts = [f"이 장면의 핵심은 이거예요. {takeaway}", exam_cue, anchor_line]
+        return " ".join(part for part in parts if part)
 
     def plan_lesson_interruption(
         self,
@@ -207,7 +219,7 @@ class LessonLLMService:
             focus_object_id=fallback_focus,
             response_mode="branch" if heuristic_branch else "answer",
             scene_strategy="current",
-            board_title="같이 다시 볼 포인트",
+            board_title="질문 답변",
             board_points=[
                 "지금 장면에서 꼭 잡아야 할 식부터 다시 봅니다.",
                 "왜 필요한지보다 어디에 쓰이는지 먼저 연결해 봅니다.",
@@ -308,7 +320,7 @@ class LessonLLMService:
             response_mode=response_mode,
             scene_strategy=scene_strategy,
             micro_scene_key=micro_scene_key,
-            board_title=str(payload.get("board_title") or "같이 다시 볼 포인트").strip() or "같이 다시 볼 포인트",
+            board_title=str(payload.get("board_title") or "질문 답변").strip() or "질문 답변",
             board_points=[str(item).strip() for item in board_points if str(item).strip()][:3],
             branch_outline=[str(item).strip() for item in branch_outline if str(item).strip()][:3] or fallback.branch_outline,
             resume_label=str(payload.get("resume_label") or "이어서 같이 볼게요").strip() or "이어서 같이 볼게요",

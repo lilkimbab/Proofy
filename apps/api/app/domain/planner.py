@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import date, timedelta
 from typing import Any
 
+from app.content.lecture_copy import josa
 from app.domain.models import LearnerProfile, MasteryState, StudyDay, StudyTask
 
 
@@ -32,14 +33,14 @@ def _unit_name(item: MasteryState) -> str:
 
 def _phase_name(days_left: int) -> str:
     if days_left > 210:
-        return "개념 체력 구간"
+        return "개념 다지기"
     if days_left > 120:
-        return "약점 정복 구간"
+        return "약점 보완"
     if days_left > 60:
-        return "실전 적응 구간"
+        return "실전 적응"
     if days_left > 20:
-        return "실전 압축 구간"
-    return "파이널 구간"
+        return "실전 마무리"
+    return "파이널"
 
 
 def _phase_task_minutes(days_left: int) -> tuple[int, int, int]:
@@ -148,12 +149,12 @@ def _question_review_bonus(unit_categories: dict[str, int]) -> int:
 
 def _question_focus_line(primary: MasteryState, categories: dict[str, int]) -> str:
     if not categories:
-        return f"{_unit_name(primary)}를 먼저 잡고 바로 문제에 이어 붙입니다."
+        return f"{josa(_unit_name(primary), '을')} 먼저 공부하고 바로 문제를 풀어요."
     if categories.get("basic", 0) + categories.get("concept", 0) >= categories.get("process", 0) + categories.get("application", 0):
-        return f"{_unit_name(primary)}에서 자주 멈춘 개념 질문을 먼저 정리하고 설명을 더 촘촘하게 다시 밟습니다."
+        return f"{_unit_name(primary)}에서 자주 막혔던 개념을 다시 정리해요."
     if categories.get("killer", 0):
-        return f"{_unit_name(primary)}의 고난도 질문이 많아 오늘은 킬러 접근 순서를 먼저 고정합니다."
-    return f"{_unit_name(primary)}에서 자주 막힌 풀이 순서를 다시 세우고 바로 문제로 연결합니다."
+        return f"{_unit_name(primary)} 고난도 질문이 많았어요. 오늘은 킬러 문제 푸는 순서부터 잡아요."
+    return f"{_unit_name(primary)}에서 자주 막힌 풀이 순서를 다시 정리하고 바로 문제를 풀어요."
 
 
 def _pick_question_aware_unit(
@@ -226,10 +227,10 @@ def _pick_priority_unit(
 
 def _killer_task_title(primary: MasteryState, killer: MasteryState) -> str:
     if killer.id == primary.id:
-        return f"{_track_name(killer.id)} · {_unit_name(killer)} 고난도 연결 문제"
+        return f"{_track_name(killer.id)} · {_unit_name(killer)} 고난도 문제"
     return (
-        f"{_track_name(primary.id)} · {_unit_name(primary)}에서 "
-        f"{_track_name(killer.id)} · {_unit_name(killer)}까지 킬러 연결"
+        f"{_track_name(primary.id)} · {_unit_name(primary)} + "
+        f"{_track_name(killer.id)} · {_unit_name(killer)} 킬러 문제"
     )
 
 
@@ -281,11 +282,11 @@ def _lesson_title(profile: LearnerProfile, item: MasteryState, days_left: int) -
     track = _track_name(item.id)
     unit = _unit_name(item)
     if item.score < 50:
-        return f"{track} · {unit} 개념 회복 강의"
+        return f"{track} · {unit} 개념 다시 보기"
     if item.score < 65:
-        return f"{track} · {unit} 빈칸 메우기 강의"
+        return f"{track} · {unit} 개념 보충 강의"
     if _target_intensity(profile) >= 2 and days_left <= 180:
-        return f"{track} · {unit} 고난도 구조 강의"
+        return f"{track} · {unit} 고난도 강의"
     return f"{track} · {unit} AI 칠판 강의"
 
 
@@ -293,15 +294,15 @@ def _practice_title(profile: LearnerProfile, primary: MasteryState) -> str:
     track = _track_name(primary.id)
     unit = _unit_name(primary)
     if primary.score < 50:
-        return f"{track} · {unit} 진단 보정 문제 묶음"
+        return f"{track} · {unit} 기본 문제"
     if _target_intensity(profile) >= 2 and primary.score >= 60:
-        return f"{track} · {unit} 한계돌파 연결 문제 묶음"
-    return f"{track} · {unit} 핵심 문제 묶음"
+        return f"{track} · {unit} 한계돌파 문제"
+    return f"{track} · {unit} 핵심 문제"
 
 
 def _review_title(primary: MasteryState, review: MasteryState) -> str:
     return (
-        f"{_track_name(primary.id)} · {_unit_name(primary)} 오답 복기 + "
+        f"{_track_name(primary.id)} · {_unit_name(primary)} 오답 복습, "
         f"{_track_name(review.id)} · {_unit_name(review)} 다시 보기"
     )
 
@@ -519,7 +520,7 @@ def generate_plan(
             tasks.append(
                 StudyTask(
                     id=f"{current.isoformat()}-spaced-review",
-                    title=f"{_track_name(review_unit.id)} · {_unit_name(review_unit)} 간격 복습",
+                    title=f"{_track_name(review_unit.id)} · {_unit_name(review_unit)} 복습",
                     type="review",
                     minutes=12 if review_unit.score >= 60 else 16,
                     status=_task_status(offset, len(tasks)),
@@ -551,16 +552,16 @@ def generate_plan(
 
         minutes_target = min(profile.daily_minutes, max(daily_target, sum(task.minutes for task in tasks)))
         theme = (
-            f"{phase} · {primary.title} 중심 회복"
+            f"{phase} · {primary.title}"
             if not checkpoint_day
             else f"{phase} · 주간 점검"
         )
         focus = (
             f"{_question_focus_line(primary, primary_question_categories)} "
-            f"다음으로 {_unit_name(secondary)} 문제를 붙여 연습하고, "
-            f"오늘 막힌 내용은 {_unit_name(review)} 간격 복습으로 다시 회수합니다."
+            f"이어서 {_unit_name(secondary)} 문제를 풀고, "
+            f"오늘 틀린 내용은 {_unit_name(review)} 복습에서 다시 봐요."
             if not checkpoint_day
-            else f"이번 주 약점인 {_unit_name(primary)}와 {_unit_name(secondary)}를 한 번에 섞어 실전 감각을 점검합니다."
+            else f"이번 주 약점인 {josa(_unit_name(primary), '과')} {josa(_unit_name(secondary), '을')} 섞어서 실전처럼 풀어 봐요."
         )
         plan.append(
             StudyDay(
@@ -750,7 +751,7 @@ def apply_attempt_feedback(
             day_after.tasks.append(
                 StudyTask(
                     id=f"{day_after.date}-review-spaced",
-                    title=f"{problem_title} 간격 복습 1묶음",
+                    title=f"{problem_title} 복습",
                     type="review",
                     minutes=14,
                     status="planned",

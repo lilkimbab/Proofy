@@ -216,7 +216,7 @@ class CurriculumReviewTest(unittest.TestCase):
             39,
         )
         for lesson in core_lessons:
-            titles = {scene["title"] for scene in lesson["scenes"]}
+            titles = {scene.get("templateTitle") or scene["title"] for scene in lesson["scenes"]}
             self.assertIn("대표 예제 접근", titles)
             self.assertIn("대표 예제 해설", titles)
             self.assertIn("대표 예제 문제 읽기", titles)
