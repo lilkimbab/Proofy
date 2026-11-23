@@ -1,0 +1,5 @@
+모든 테스트 통과.
+
+[STEP 12 COMPLETE] Hybrid Search 구현 완료
+
+다음 단계: `claude -p "$(cat prompts/step13_reranker.txt)"`

@@ -1,0 +1,21 @@
+All three completion criteria are met:
+
+1. `test_personalization.py` → **"=== PERSONALIZATION TEST PASSED ==="** — boost가 `0.0328 → 0.0492`로 정상 적용
+2. `user_id` 미전달 시 anonymous 검색이 기존과 동일하게 동작
+3. `/search`와 `/feedback` 엔드포인트가 FastAPI에 정상 등록
+
+**변경 파일 요약:**
+
+| 파일 | 변경 |
+|---|---|
+| `vector_db/personalization.py` | **신규** — `PersonalizationStore` (프로파일 저장/로드, boost 계산, 신호 누적) |
+| `vector_db/manager.py` | `search()`에 `user_id` 파라미터 추가, boost 적용, `record_feedback()` 메서드 추가 |
+| `vector_db/retriever.py` | `_format()`에 `id`, `chunk_index` 필드 pass-through |
+| `vector_db/__init__.py` | `PersonalizationStore` export 추가 |
+| `api/schemas.py` | `SearchRequest`에 `user_id`, `SearchResult`에 `id`/`chunk_index`, `FeedbackRequest`/`FeedbackResponse` 추가 |
+| `api/routes.py` | `/search`에 `user_id` 전달, `/feedback` 엔드포인트 추가 |
+| `.env.example` | Personalization 환경변수 6개 추가 |
+| `.gitignore` | `user_profiles/` 추가 |
+
+[STEP 15 COMPLETE] Personalization 구현 완료
+4단계 retrieval 개선 (Hybrid / Reranker / Adaptive Chunking / Personalization) 모두 적용 완료

@@ -1,0 +1,31 @@
+node_modules
+.next
+data/*.json
+uploads/*
+!.gitkeep
+.env.local
+CLAUDE.md
+
+# 테스트용 문서 파일
+*.pdf
+*.docx
+*.pptx
+*.ppt
+*.xlsx
+*.xls
+
+# Python agents - 생성 데이터 및 설정
+**/.env
+**/__pycache__/
+**/*.pyc
+**/.venv/
+document_agent/generated_materials/
+document_agent/image_store/
+rag_agent/lancedb_store/
+rag_agent/image_store/
+rag_agent/user_profiles/
+rag_server/lancedb_store/
+rag_server/image_store/
+rag_server/user_profiles/
+main_server/.venv/
+rag_server/.venv/

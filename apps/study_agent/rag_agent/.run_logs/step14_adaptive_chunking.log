@@ -1,0 +1,5 @@
+All tests pass — adaptive chunking, hybrid search, and reranker.
+
+[STEP 14 COMPLETE] Adaptive Chunking 구현 완료
+
+다음 단계: `claude -p "$(cat prompts/step15_personalization.txt)"`

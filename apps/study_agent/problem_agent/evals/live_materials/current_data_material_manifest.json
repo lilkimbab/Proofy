@@ -1,0 +1,196 @@
+{
+  "materials": [
+    {
+      "document_id": "bio_gene_sequence_lecture10",
+      "source_file": "765234abe048db06e3f9caf1cf7825b1_lecture10.pdf",
+      "domain_family": "biology",
+      "domain": "genetics",
+      "language": "en",
+      "topics": [
+        "gene sequence",
+        "promoter",
+        "coding sequence",
+        "transcription",
+        "translation start",
+        "stop codon"
+      ],
+      "recommended_problem_styles": [
+        "evidence_analysis",
+        "concept_boundary",
+        "trace_and_explain"
+      ],
+      "recommended_case_count": 3,
+      "notes": "Lecture 10 material for gene sequence structure and sequence-boundary reasoning."
+    },
+    {
+      "document_id": "stats_discriminant_analysis",
+      "source_file": "9.pdf",
+      "domain_family": "statistics",
+      "domain": "discriminant_analysis",
+      "language": "en",
+      "topics": [
+        "discriminant analysis",
+        "classification",
+        "profiling",
+        "Mahalanobis distance",
+        "covariance"
+      ],
+      "recommended_problem_styles": [
+        "calculation_practice",
+        "evidence_analysis",
+        "error_detection"
+      ],
+      "recommended_case_count": 3,
+      "notes": "Statistics and machine-learning classification material."
+    },
+    {
+      "document_id": "physics_capacitance_dielectrics",
+      "source_file": "ba7ba4fb31a34a167dc98bf25904d38a_chap5capacitance.pdf",
+      "domain_family": "physics",
+      "domain": "electromagnetism",
+      "language": "en",
+      "topics": [
+        "capacitance",
+        "dielectrics",
+        "parallel capacitors",
+        "series capacitors",
+        "energy storage"
+      ],
+      "recommended_problem_styles": [
+        "calculation_practice",
+        "condition_mutation",
+        "error_detection"
+      ],
+      "recommended_case_count": 3,
+      "notes": "Capacitance and dielectrics material for calculation and condition-change problems."
+    },
+    {
+      "document_id": "linguistics_discourse_genre",
+      "source_file": "ch.4_Discourse-and-Genre-Analysis_st.pdf",
+      "domain_family": "linguistics",
+      "domain": "discourse_genre_analysis",
+      "language": "en",
+      "topics": [
+        "discourse analysis",
+        "genre analysis",
+        "textual features",
+        "context",
+        "register"
+      ],
+      "recommended_problem_styles": [
+        "evidence_analysis",
+        "concept_comparison",
+        "concept_boundary"
+      ],
+      "recommended_case_count": 2,
+      "notes": "Discourse and genre analysis material for evidence and boundary judgment."
+    },
+    {
+      "document_id": "nlp_transformers_cs224n",
+      "source_file": "cs224n-spr2024-lecture08-transformers.pdf",
+      "domain_family": "computer_science",
+      "domain": "natural_language_processing",
+      "language": "en",
+      "topics": [
+        "transformers",
+        "self-attention",
+        "positional encoding",
+        "encoder",
+        "decoder",
+        "sequence modeling"
+      ],
+      "recommended_problem_styles": [
+        "trace_and_explain",
+        "concept_comparison",
+        "error_detection"
+      ],
+      "recommended_case_count": 3,
+      "notes": "CS224N transformer lecture material for attention and sequence-modeling reasoning."
+    },
+    {
+      "document_id": "ko_ml_sequence_rnn_cnn",
+      "source_file": "handson-ml2-15-slides.pdf",
+      "domain_family": "computer_science",
+      "domain": "machine_learning_sequence_modeling",
+      "language": "ko",
+      "topics": [
+        "순차데이터",
+        "RNN",
+        "CNN",
+        "시계열",
+        "sequence modeling"
+      ],
+      "recommended_problem_styles": [
+        "trace_and_explain",
+        "error_detection",
+        "concept_comparison"
+      ],
+      "recommended_case_count": 3,
+      "notes": "Korean sequence-modeling material for Korean generation and RNN/CNN comparison."
+    },
+    {
+      "document_id": "cv_detection_segmentation_cs231n",
+      "source_file": "lecture_9.pdf",
+      "domain_family": "computer_science",
+      "domain": "computer_vision",
+      "language": "en",
+      "topics": [
+        "object detection",
+        "segmentation",
+        "visualization",
+        "localization",
+        "model understanding"
+      ],
+      "recommended_problem_styles": [
+        "evidence_analysis",
+        "concept_comparison",
+        "design_under_constraint"
+      ],
+      "recommended_case_count": 3,
+      "notes": "CS231n detection, segmentation, visualization, and understanding material."
+    },
+    {
+      "document_id": "econ_imperfect_competition_game_theory",
+      "source_file": "mit14_12f12_chapter7_f12 (1).pdf",
+      "domain_family": "economics",
+      "domain": "game_theory_imperfect_competition",
+      "language": "en",
+      "topics": [
+        "Cournot competition",
+        "Bertrand competition",
+        "Nash equilibrium",
+        "rationalizability",
+        "incomplete information"
+      ],
+      "recommended_problem_styles": [
+        "calculation_practice",
+        "condition_mutation",
+        "concept_comparison"
+      ],
+      "recommended_case_count": 3,
+      "notes": "Imperfect competition and game theory material."
+    },
+    {
+      "document_id": "cpp_heap_destructors",
+      "source_file": "slides-12-heap-destructor.pdf",
+      "domain_family": "computer_science",
+      "domain": "cpp_dynamic_memory",
+      "language": "en",
+      "topics": [
+        "heap",
+        "destructors",
+        "dynamic memory",
+        "classes",
+        "objects",
+        "resource management"
+      ],
+      "recommended_problem_styles": [
+        "error_detection",
+        "trace_and_explain",
+        "concept_boundary"
+      ],
+      "recommended_case_count": 2,
+      "notes": "C++ heap and destructor material for resource-lifetime reasoning."
+    }
+  ]
+}

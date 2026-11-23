@@ -1,0 +1,16 @@
+.claude
+prompts
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+lancedb_data
+*.lance
+.env
+image_store/
+user_profiles/
+temp.md
+dev_reset_db.py
+dry_run.py
+tests/sample_docs/
