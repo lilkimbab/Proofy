@@ -1625,8 +1625,8 @@ sub {
 
 .auth-bubble {
   position: absolute;
-  right: -28px;
-  bottom: -34px;
+  right: -36px;
+  bottom: -70px;
   padding: 10px 14px;
   border-radius: 10px;
   background: var(--surface);
@@ -1644,9 +1644,10 @@ sub {
 }
 
 .auth-sticky {
-  justify-self: end;
+  justify-self: start;
   width: 200px;
-  margin-top: 18px;
+  margin-top: 30px;
+  margin-left: 24px;
   padding: 16px 16px 14px;
   background: #fff3a8;
   color: #2a2a2a;

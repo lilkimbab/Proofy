@@ -112,7 +112,7 @@ export default function WelcomePage() {
         <aside className="auth-aside">
           <div className="chalk-doodles" aria-hidden="true">
             <span style={{ top: "14%", left: "58%", transform: "rotate(-6deg)" }}>sin²θ + cos²θ = 1</span>
-            <span style={{ top: "24%", left: "8%", transform: "rotate(4deg)" }}>Σₖ₌₁ⁿ k² = n(n+1)(2n+1)/6</span>
+            <span style={{ top: "6%", left: "34%", transform: "rotate(4deg)" }}>Σₖ₌₁ⁿ k² = n(n+1)(2n+1)/6</span>
             <span style={{ top: "78%", left: "60%", transform: "rotate(-3deg)" }}>P(A|B) = P(A∩B) / P(B)</span>
             <span style={{ top: "86%", left: "10%", transform: "rotate(2deg)" }}>|a⃗ + b⃗|² = |a⃗|² + 2a⃗·b⃗ + |b⃗|²</span>
             <span style={{ top: "40%", left: "70%", transform: "rotate(8deg)" }}>logₐ b = log b / log a</span>
@@ -124,19 +124,21 @@ export default function WelcomePage() {
             <p className="auth-line">모르는 줄, 콕.</p>
 
             <div className="auth-board">
-              <span className="auth-board-tag">미적분 · 4점</span>
+              <span className="auth-board-tag">수학Ⅱ · 4점</span>
               <p className="auth-board-q">
-                lim (x→2) {"{"}f(x) − 3{"}"} / (x − 2) = 5 일 때
+                f(x) = x³ − 3x² + a 일 때, 방정식 |f(x)| = 2 의
                 <br />
-                lim (x→2) {"{"}x²f(x) − 12{"}"} / (x − 2) 의 값은?
+                서로 다른 실근이 4개가 되도록 하는
+                <br />
+                모든 정수 a의 값의 합은?
               </p>
+              <p className="auth-board-step">극댓값 f(0) = a, 극솟값 f(2) = a − 4</p>
               <p className="auth-board-step">
-                g(x) = x²f(x) 로 두면 …{" "}
-                <mark>= g′(2)</mark>
+                |f(x)| = 2 ⇔ f(x) = 2 또는 <mark>f(x) = −2</mark>
               </p>
               <div className="auth-bubble">
-                <b>Q.</b> 왜 갑자기 g′(2)?
-                <span className="auth-bubble-a">분자가 g(x) − g(2) 꼴이라서!</span>
+                <b>Q.</b> f(x) = −2는 왜 봐요?
+                <span className="auth-bubble-a">절댓값이 2면 −2도 되잖아!</span>
               </div>
             </div>
 
