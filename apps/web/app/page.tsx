@@ -133,12 +133,13 @@ export default function WelcomePage() {
                 모든 정수 a의 값의 합은?
               </p>
               <p className="auth-board-step">극댓값 f(0) = a, 극솟값 f(2) = a − 4</p>
+              <p className="auth-board-step">−2 &lt; a &lt; 2 : 1 + 3개, 2 &lt; a &lt; 6 : 3 + 1개</p>
               <p className="auth-board-step">
-                |f(x)| = 2 ⇔ f(x) = 2 또는 <mark>f(x) = −2</mark>
+                <mark>a = 2 : 2 + 2개</mark>
               </p>
               <div className="auth-bubble">
-                <b>Q.</b> f(x) = −2는 왜 봐요?
-                <span className="auth-bubble-a">절댓값이 2면 −2도 되잖아!</span>
+                <b>Q.</b> a = 2는 경계인데 넣어요?
+                <span className="auth-bubble-a">2랑 −2에 둘 다 접해서 2+2=4개!</span>
               </div>
             </div>
 
