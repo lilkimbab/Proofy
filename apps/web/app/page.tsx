@@ -110,12 +110,51 @@ export default function WelcomePage() {
     return (
       <div className="auth-page">
         <aside className="auth-aside">
+          <div className="chalk-doodles" aria-hidden="true">
+            <span style={{ top: "14%", left: "58%", transform: "rotate(-6deg)" }}>sin²θ + cos²θ = 1</span>
+            <span style={{ top: "24%", left: "8%", transform: "rotate(4deg)" }}>Σₖ₌₁ⁿ k² = n(n+1)(2n+1)/6</span>
+            <span style={{ top: "78%", left: "60%", transform: "rotate(-3deg)" }}>P(A|B) = P(A∩B) / P(B)</span>
+            <span style={{ top: "86%", left: "10%", transform: "rotate(2deg)" }}>|a⃗ + b⃗|² = |a⃗|² + 2a⃗·b⃗ + |b⃗|²</span>
+            <span style={{ top: "40%", left: "70%", transform: "rotate(8deg)" }}>logₐ b = log b / log a</span>
+          </div>
+
           <Brand tone="light" />
-          <blockquote>
-            <p>모르는 줄, 콕.</p>
-            <footer>Proofy 칠판 강의</footer>
-          </blockquote>
-          <div className="chalk-eq">f′(a) = lim(h→0) [f(a+h) − f(a)] / h</div>
+
+          <div className="auth-stage">
+            <p className="auth-line">모르는 줄, 콕.</p>
+
+            <div className="auth-board">
+              <span className="auth-board-tag">미적분 · 4점</span>
+              <p className="auth-board-q">
+                lim (x→2) {"{"}f(x) − 3{"}"} / (x − 2) = 5 일 때
+                <br />
+                lim (x→2) {"{"}x²f(x) − 12{"}"} / (x − 2) 의 값은?
+              </p>
+              <p className="auth-board-step">
+                g(x) = x²f(x) 로 두면 …{" "}
+                <mark>= g′(2)</mark>
+              </p>
+              <div className="auth-bubble">
+                <b>Q.</b> 왜 갑자기 g′(2)?
+                <span className="auth-bubble-a">분자가 g(x) − g(2) 꼴이라서!</span>
+              </div>
+            </div>
+
+            <div className="auth-sticky" aria-hidden="true">
+              <span>오늘</span>
+              <p>
+                미분 강의 32분
+                <br />→ 문제 11개
+                <br />→ 어제 틀린 2개
+              </p>
+            </div>
+          </div>
+
+          <ul className="auth-subjects" aria-label="과목">
+            {["공통수학", "대수", "미적분", "확률과 통계", "기하"].map((subject) => (
+              <li key={subject}>{subject}</li>
+            ))}
+          </ul>
         </aside>
 
         <main className="auth-main">
@@ -290,28 +329,27 @@ export default function WelcomePage() {
           <figure className="notebook taped" aria-label="오답노트 예시">
             <div className="notebook-head">
               <b>오답노트</b>
-              <span>미적분Ⅰ · 접선</span>
+              <span>수학Ⅱ · 정적분으로 정의된 함수 · 4점</span>
             </div>
             <p className="nb-problem">
-              곡선 y = x³ − 3x 위의 점 (2, 2)에서
+              모든 실수 x에 대하여 ∫₁ˣ f(t)dt = x³ + ax² − 2
               <br />
-              그은 접선의 방정식을 구하시오.
+              를 만족시킬 때, f(a)의 값은?
             </p>
             <div className="nb-line">
               <span className="mark-ok" aria-label="맞음">✓</span>
-              y′ = 3x² − 3
-            </div>
-            <div className="nb-line">
-              <span className="mark-ok" aria-label="맞음">✓</span>
-              기울기 y′(2) = 9
+              양변 미분 → f(x) = 3x² + 2ax
             </div>
             <div className="nb-line">
               <span className="mark-ng" aria-label="틀림">✗</span>
-              y = 9x <s>+ 16</s>
-              <span className="pen-note">−18 + 2 = −16 !!</span>
+              <s>x = 0 대입 → 0 = −2</s>
+              <span className="pen-note">아래끝은 1 !!</span>
             </div>
             <div className="nb-line">
-              <span className="pen-note" style={{ marginLeft: 0 }}>이항할 때 부호 또 틀림</span>
+              <span className="pen-note" style={{ marginLeft: 0 }}>x = 1 대입 → 1 + a − 2 = 0, a = 1</span>
+            </div>
+            <div className="nb-line">
+              <span className="pen-note" style={{ marginLeft: 0 }}>f(1) = 3 + 2 = 5</span>
             </div>
             <span className="nb-stamp">다시 풀기</span>
           </figure>
@@ -372,20 +410,22 @@ export default function WelcomePage() {
           </h2>
           <div className="scene-visual">
             <div className="mock-board" aria-hidden="true">
-              <h4>미분계수의 정의</h4>
-              <div className="eq">
-                f′(a) = lim (h→0) [f(a+h) − f(a)] / h
-                <svg className="cursor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 2l14 9-6 1.5 3.5 7-2.5 1.2-3.4-7L4 18z" />
-                </svg>
+              <h4>미분계수의 정의 활용</h4>
+              <div className="board-lines">
+                <span>lim (x→2) {"{"}f(x) − 3{"}"} / (x − 2) = 5</span>
+                <span className="dim">⇒ f(2) = 3, f′(2) = 5</span>
+                <span className="dim">g(x) = x²f(x) 로 두면 g(2) = 12</span>
+                <span className="eq">
+                  lim (x→2) {"{"}x²f(x) − 12{"}"} / (x − 2) = g′(2)
+                  <svg className="cursor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 2l14 9-6 1.5 3.5 7-2.5 1.2-3.4-7L4 18z" />
+                  </svg>
+                </span>
+                <span className="dim">= 2·2·f(2) + 2²·f′(2) = 32</span>
               </div>
-              <ul>
-                <li>평균변화율에서 h를 0으로 보낸 값</li>
-                <li>x = a에서 그은 접선의 기울기</li>
-              </ul>
               <div className="mock-ask">
-                <div className="q">왜 h를 0으로 보내요?</div>
-                <div className="a">두 점을 한 점으로 붙여야 &lsquo;그 순간&rsquo;의 기울기가 되거든요.</div>
+                <div className="q">왜 갑자기 g′(2)가 돼요?</div>
+                <div className="a">분자가 g(x) − g(2) 꼴이라서요. 미분계수 정의 그대로예요.</div>
               </div>
             </div>
             <span className="hand-note note-board" aria-hidden="true">
