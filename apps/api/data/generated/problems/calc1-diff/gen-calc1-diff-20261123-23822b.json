@@ -1,0 +1,241 @@
+{
+  "id": "gen-calc1-diff-20261123-23822b",
+  "unitId": "calc1-diff",
+  "course": "미적분Ⅰ",
+  "domain": "미분",
+  "archetype": "diff-root-count-function",
+  "archetypeName": "실근 개수로 정의한 함수",
+  "target": "22",
+  "createdAt": "2026-11-23T13:03:38+00:00",
+  "status": "disputed",
+  "difficulty": {
+    "verdict": "hard",
+    "weakSolver": "groq:openai/gpt-oss-20b",
+    "weakSolved": false,
+    "strongReasoningTokens": null,
+    "hardenRounds": 0
+  },
+  "review": {
+    "state": "rejected",
+    "note": "문장 결함: 삼차함수는 최솟값이 없음(극솟값과 혼동). 조건 (가)(나) 표현도 어색함.",
+    "reviewedAt": "2026-11-23T13:12:57+00:00"
+  },
+  "problem": {
+    "statement": "실수 x에 대하여 최고차항의 계수가 1인 삼차다항함수 f(x)=x^3+px^2+qx+r (p,q,r는 정수) 를 정의하고, 실수 t에 대하여 방정식 f(x)=t 가 만족하는 서로 다른 실근의 개수를 h(t)라 하자.\n(가) h(t)=1인 경우는 모든 t>5 에 대해 성립한다.\n(나) h(t)=1인 경우는 모든 t<-1 에 대해 성립한다.\n(다) h(2)=3이다.\n(라) h(t)=2인 서로 다른 실수 t 가 정확히 두 개 존재한다.\n(마) (라)에서 언급된 두 t 의 합은 4이다.\n(바) f(1)=2이다.\n위 조건을 만족하는 함수 f(x)에 대하여, f(x)가 최솟값을 갖는 x의 값을 구하시오.",
+    "answer": 2,
+    "solution": [
+      "1. h(t)=1이 되는 구간은 함수값이 가장 큰 값보다 큰 t와 가장 작은 값보다 작은 t이므로 (가),(나) 로부터 극댓값 M ≤5, 극솟값 m ≥-1이다.",
+      "2. h(2)=3이라는 (다) 로부터 2는 m과 M 사이에 존재함을 알 수 있다.",
+      "3. h(t)=2인 t는 정확히 두 개이며 이는 극댓값과 극솟값이다. (라),(마) 로부터 M+m=4이며 M>2>m이다.",
+      "4. 가능한 정수 쌍 (M,m)은 (4,0),(3,1),(5,-1) 등이다. (다)와 (가),(나) 를 만족하려면 M-m=4가 되어야 하므로 (M,m)=(4,0)만 가능하다.",
+      "5. m=0이므로 최소값이 0인 점 a에서 f(x)와 x축이 접한다. 따라서 f(x)=(x-a)^2(x-b)이며 a-b=3 (M-m=4에서 d=3).",
+      "6. (바) f(1)=2를 이용해 (1-a)^2(4-a)=2를 푼다. 정수 해는 a=2이며 이때 b=-1이다.",
+      "7. 따라서 f(x)=(x-2)^2(x+1)=x^3-3x^2+4이고 최소값은 x=2에서 얻는다.",
+      "8. 구하고자 하는 값은 최소값을 갖는 x=2이므로 답은 2이다."
+    ],
+    "cases": [
+      "가능한 (M,m) 쌍: (4,0), (3,1), (5,-1) 등 → (다)와 (가),(나) 로부터 M>2>m 이므로 (3,1)과 (5,-1)도 만족 가능하나 M-m=4가 아니면 정수 계수를 갖는 삼차함수가 존재하지 않는다.",
+      "M=3, m=1 경우 d^3=27*(M-m)/4=27*2/4=13.5 → d=∛13.5가 비정수이므로 계수가 정수가 되지 않는다.",
+      "M=5, m=-1 경우 d^3=27*6/4=40.5 → d 비정수, 마찬가지로 정수 계수 불가.",
+      "따라서 (M,m)=(4,0)만 남는다."
+    ],
+    "trap": "학생들이 h(t)=2인 t를 바로 (마)에서 주어진 합 4와 동일하게 답으로 착각한다.",
+    "whyHard": "h(t)와 극값 사이의 관계를 파악하고, 여러 가능한 extremum 조합을 차례로 검토한 뒤 f(1) 조건으로 유일한 함수와 최소점의 x값을 찾는 과정이 복합적이다.",
+    "verify": {
+      "f": "x**3 - 3*x**2 + 4",
+      "define": [],
+      "checks": [
+        {
+          "condition": "(가)",
+          "expr": "same(root_count(f - Rational(6,1)), 1)"
+        },
+        {
+          "condition": "(가)",
+          "expr": "same(root_count(f - Rational(10,1)), 1)"
+        },
+        {
+          "condition": "(나)",
+          "expr": "same(root_count(f + Rational(2,1)), 1)"
+        },
+        {
+          "condition": "(다)",
+          "expr": "same(root_count(f - Rational(2,1)), 3)"
+        },
+        {
+          "condition": "(라)",
+          "expr": "same(len(level_jumps(f)), 2)"
+        },
+        {
+          "condition": "(마)",
+          "expr": "same(sum(level_jumps(f)), 4)"
+        },
+        {
+          "condition": "(바)",
+          "expr": "same(at(f, 1), 2)"
+        }
+      ],
+      "answer": "2"
+    }
+  },
+  "verification": {
+    "ok": true,
+    "answer_value": "2",
+    "answer_matches": true,
+    "answer_is_natural": true,
+    "checks": [
+      {
+        "condition": "(가)",
+        "expr": "same(root_count(f - Rational(6,1)), 1)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(가)",
+        "expr": "same(root_count(f - Rational(10,1)), 1)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(나)",
+        "expr": "same(root_count(f + Rational(2,1)), 1)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(다)",
+        "expr": "same(root_count(f - Rational(2,1)), 3)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(라)",
+        "expr": "same(len(level_jumps(f)), 2)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(마)",
+        "expr": "same(sum(level_jumps(f)), 4)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      },
+      {
+        "condition": "(바)",
+        "expr": "same(at(f, 1), 2)",
+        "ok": true,
+        "value": "True",
+        "error": ""
+      }
+    ],
+    "errors": []
+  },
+  "solves": [
+    {
+      "role": "strong",
+      "model": "",
+      "error": "openai/gpt-oss-120b HTTP 413: {\"error\":{\"message\":\"Request too large for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 28410, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+      "correct": null,
+      "round": 1
+    },
+    {
+      "role": "second",
+      "model": "groq:openai/gpt-oss-120b",
+      "answer": null,
+      "correct": false,
+      "unique": false,
+      "issue": "",
+      "keyStep": "Deriving p,q from s=a+b and t=ab gave integer families; only n=0 yields valid cubics, giving two distinct functions (x^3−x+2 and x^3−6x^2+11x−4), so the x of the minimum is not unique",
+      "reasoningTokens": 25613,
+      "outputTokens": 25698,
+      "elapsed": 54.6,
+      "round": 1
+    },
+    {
+      "role": "weak",
+      "model": "groq:openai/gpt-oss-20b",
+      "answer": null,
+      "correct": false,
+      "unique": false,
+      "issue": "조건을 만족하는 함수가 존재하지 않는다.",
+      "keyStep": "조건 충족 여부 확인",
+      "reasoningTokens": 2006,
+      "outputTokens": 2050,
+      "elapsed": 2.7,
+      "round": 1
+    }
+  ],
+  "rounds": [
+    {
+      "kind": "generate",
+      "model": "groq:openai/gpt-oss-120b",
+      "elapsed": 61.2,
+      "reasoningTokens": 26967,
+      "outputTokens": 27998,
+      "verificationOk": true,
+      "failures": [],
+      "draft": {
+        "statement": "실수 x에 대하여 최고차항의 계수가 1인 삼차다항함수 f(x)=x^3+px^2+qx+r (p,q,r는 정수) 를 정의하고, 실수 t에 대하여 방정식 f(x)=t 가 만족하는 서로 다른 실근의 개수를 h(t)라 하자.\n(가) h(t)=1인 경우는 모든 t>5 에 대해 성립한다.\n(나) h(t)=1인 경우는 모든 t<-1 에 대해 성립한다.\n(다) h(2)=3이다.\n(라) h(t)=2인 서로 다른 실수 t 가 정확히 두 개 존재한다.\n(마) (라)에서 언급된 두 t 의 합은 4이다.\n(바) f(1)=2이다.\n위 조건을 만족하는 함수 f(x)에 대하여, f(x)가 최솟값을 갖는 x의 값을 구하시오.",
+        "answer": 2,
+        "solution": [
+          "1. h(t)=1이 되는 구간은 함수값이 가장 큰 값보다 큰 t와 가장 작은 값보다 작은 t이므로 (가),(나) 로부터 극댓값 M ≤5, 극솟값 m ≥-1이다.",
+          "2. h(2)=3이라는 (다) 로부터 2는 m과 M 사이에 존재함을 알 수 있다.",
+          "3. h(t)=2인 t는 정확히 두 개이며 이는 극댓값과 극솟값이다. (라),(마) 로부터 M+m=4이며 M>2>m이다.",
+          "4. 가능한 정수 쌍 (M,m)은 (4,0),(3,1),(5,-1) 등이다. (다)와 (가),(나) 를 만족하려면 M-m=4가 되어야 하므로 (M,m)=(4,0)만 가능하다.",
+          "5. m=0이므로 최소값이 0인 점 a에서 f(x)와 x축이 접한다. 따라서 f(x)=(x-a)^2(x-b)이며 a-b=3 (M-m=4에서 d=3).",
+          "6. (바) f(1)=2를 이용해 (1-a)^2(4-a)=2를 푼다. 정수 해는 a=2이며 이때 b=-1이다.",
+          "7. 따라서 f(x)=(x-2)^2(x+1)=x^3-3x^2+4이고 최소값은 x=2에서 얻는다.",
+          "8. 구하고자 하는 값은 최소값을 갖는 x=2이므로 답은 2이다."
+        ],
+        "cases": [
+          "가능한 (M,m) 쌍: (4,0), (3,1), (5,-1) 등 → (다)와 (가),(나) 로부터 M>2>m 이므로 (3,1)과 (5,-1)도 만족 가능하나 M-m=4가 아니면 정수 계수를 갖는 삼차함수가 존재하지 않는다.",
+          "M=3, m=1 경우 d^3=27*(M-m)/4=27*2/4=13.5 → d=∛13.5가 비정수이므로 계수가 정수가 되지 않는다.",
+          "M=5, m=-1 경우 d^3=27*6/4=40.5 → d 비정수, 마찬가지로 정수 계수 불가.",
+          "따라서 (M,m)=(4,0)만 남는다."
+        ],
+        "trap": "학생들이 h(t)=2인 t를 바로 (마)에서 주어진 합 4와 동일하게 답으로 착각한다.",
+        "whyHard": "h(t)와 극값 사이의 관계를 파악하고, 여러 가능한 extremum 조합을 차례로 검토한 뒤 f(1) 조건으로 유일한 함수와 최소점의 x값을 찾는 과정이 복합적이다.",
+        "verify": {
+          "f": "x**3 - 3*x**2 + 4",
+          "define": [],
+          "checks": [
+            {
+              "condition": "(가)",
+              "expr": "same(root_count(f - Rational(6,1)), 1)"
+            },
+            {
+              "condition": "(가)",
+              "expr": "same(root_count(f - Rational(10,1)), 1)"
+            },
+            {
+              "condition": "(나)",
+              "expr": "same(root_count(f + Rational(2,1)), 1)"
+            },
+            {
+              "condition": "(다)",
+              "expr": "same(root_count(f - Rational(2,1)), 3)"
+            },
+            {
+              "condition": "(라)",
+              "expr": "same(len(level_jumps(f)), 2)"
+            },
+            {
+              "condition": "(마)",
+              "expr": "same(sum(level_jumps(f)), 4)"
+            },
+            {
+              "condition": "(바)",
+              "expr": "same(at(f, 1), 2)"
+            }
+          ],
+          "answer": "2"
+        }
+      }
+    }
+  ]
+}
