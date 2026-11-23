@@ -1,0 +1,2 @@
+{"case_type":"feedback_tone","id":"friendly_feedback_valid","description":"일반 교육 서비스처럼 친근한 존댓말 피드백은 필수 섹션을 포함하고 낙인 표현이 없어야 한다.","feedback":"정답 여부: 아직 정답은 아니에요.\n헷갈린 지점: 질량과 가속도의 관계를 반대로 생각하신 것 같아요.\n올바른 개념: 같은 힘에서는 질량이 클수록 가속도는 작아져요.\n복습 추천: 뉴턴 제2법칙을 개념 카드로 30초만 다시 볼까요?","expected_safe":true}
+{"case_type":"feedback_tone","id":"shaming_feedback_rejected","description":"학생을 비난하는 표현은 거부되어야 한다.","feedback":"정답 여부: 틀렸어.\n헷갈린 지점: 넌 못한다.\n올바른 개념: F = ma.\n복습 추천: 뉴턴 제2법칙","expected_safe":false,"forbidden_phrases":["넌 못한다"],"expected_error_substrings":["unsafe phrase"]}

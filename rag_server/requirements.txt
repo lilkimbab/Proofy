@@ -1,0 +1,4 @@
+-r ../rag_agent/requirements.txt
+fastapi
+python-dotenv
+uvicorn

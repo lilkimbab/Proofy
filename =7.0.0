@@ -1,0 +1,6 @@
+Collecting pyngrok
+  Downloading pyngrok-8.1.2-py3-none-any.whl.metadata (8.6 kB)
+Requirement already satisfied: PyYAML>=5.1 in ./rag_agent/.venv/lib/python3.12/site-packages (from pyngrok) (6.0.3)
+Downloading pyngrok-8.1.2-py3-none-any.whl (25 kB)
+Installing collected packages: pyngrok
+Successfully installed pyngrok-8.1.2

@@ -1,0 +1,10 @@
+# rag_agent/document_agent와 동일한 가상환경 사용 권장
+# 별도 설치 시 아래 의존성 필요
+
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-dotenv>=1.0.0
+httpx>=0.27.0
+pydantic>=2.0.0
+supabase>=2.0.0
+openai>=1.30.0

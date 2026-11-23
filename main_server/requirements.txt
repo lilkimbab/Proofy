@@ -1,0 +1,8 @@
+-r ../document_agent/requirements.txt
+-r ../roadmap_agent/requirements.txt
+-r ../tutor_agent/requirements.txt
+-e ../problem_agent
+fastapi
+httpx
+python-dotenv
+uvicorn
