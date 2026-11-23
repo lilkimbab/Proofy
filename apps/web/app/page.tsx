@@ -15,36 +15,6 @@ import {
 type Stage = "intro" | "auth";
 type AuthMode = "login" | "signup";
 
-const FEATURES = [
-  {
-    icon: "◎",
-    title: "10분 진단",
-    body: "12문항으로 단원별 실력을 확인하고, 수능까지 남은 기간에 맞춰 하루·주간 계획을 짜 드려요.",
-  },
-  {
-    icon: "✎",
-    title: "AI 칠판 강의",
-    body: "판서를 보면서 개념을 한 장면씩 정리해요. 모르는 부분은 칠판을 눌러 바로 질문할 수 있어요.",
-  },
-  {
-    icon: "✓",
-    title: "풀이 과정 채점",
-    body: "답만 맞았는지 보지 않고 풀이 과정을 단계별로 확인해요. 어디서 틀렸는지 알려 드려요.",
-  },
-  {
-    icon: "↺",
-    title: "오답노트 자동 정리",
-    body: "틀린 문제는 오답노트에 자동으로 모이고, 다음 날 계획에 복습 문제로 다시 나와요.",
-  },
-];
-
-const STEPS = [
-  { title: "진단", body: "단원별 실력과 약점을 확인해요." },
-  { title: "강의", body: "약한 단원부터 AI 칠판 강의를 들어요." },
-  { title: "문제 풀이", body: "배운 내용을 바로 문제로 확인해요." },
-  { title: "복습", body: "틀린 문제를 오답노트로 다시 풀어요." },
-];
-
 export default function WelcomePage() {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("intro");
@@ -142,8 +112,8 @@ export default function WelcomePage() {
         <aside className="auth-aside">
           <Brand tone="light" />
           <blockquote>
-            <p>모르는 부분은 칠판을 눌러서 바로 질문하세요.</p>
-            <footer>Proofy AI 칠판 강의</footer>
+            <p>판서 중 모르는 줄은 눌러서 물어보세요. 그 줄부터 다시 설명합니다.</p>
+            <footer>Proofy 칠판 강의</footer>
           </blockquote>
           <div className="chalk-eq">f′(a) = lim(h→0) [f(a+h) − f(a)] / h</div>
         </aside>
@@ -263,17 +233,18 @@ export default function WelcomePage() {
         </div>
       </header>
 
-      <section className="hero">
+      <section className="hero graph-paper">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow">고3 수능 수학</span>
+            <span className="eyebrow">2027학년도 수능 수학</span>
             <h1>
-              <em>내 약점</em>부터 채우는
+              틀린 문제에는
               <br />
-              수능 수학 강의
+              <span className="mark">이유</span>가 있습니다
             </h1>
             <p>
-              10분 진단으로 어디서부터 공부할지 정하고, 강의를 듣다 막히면 바로 질문하세요. 틀린 문제는 오답노트에 자동으로 쌓여요.
+              Proofy는 진단 12문항으로 어느 단원에서 막히는지부터 찾습니다. 강의는 그 단원부터 시작하고, 판서를 보다
+              이해가 안 되는 줄은 눌러서 바로 물어볼 수 있습니다.
             </p>
 
             {session ? (
@@ -282,7 +253,7 @@ export default function WelcomePage() {
                   {initials(session.displayName)}
                 </span>
                 <div>
-                  <strong>{session.displayName}님으로 로그인되어 있어요</strong>
+                  <strong>{session.displayName}님으로 로그인되어 있습니다</strong>
                   <span>{session.email}</span>
                 </div>
                 <button className="btn btn-primary" type="button" onClick={resumeStoredSession}>
@@ -299,7 +270,7 @@ export default function WelcomePage() {
               ) : (
                 <>
                   <button className="btn btn-primary btn-lg" type="button" onClick={() => openAuth("signup")}>
-                    무료로 시작하기
+                    진단 평가 보러 가기
                   </button>
                   <button className="btn btn-secondary btn-lg" type="button" onClick={() => openAuth("login")}>
                     로그인
@@ -308,87 +279,121 @@ export default function WelcomePage() {
               )}
             </div>
 
-            <div className="hero-points">
-              <span>진단 10분</span>
-              <span>맞춤 학습 계획</span>
-              <span>오답노트 자동 정리</span>
-            </div>
+            <p className="hero-meta">
+              <b>공통수학 · 대수 · 미적분 · 확률과 통계 · 기하</b> 5개 과목, 47개 단원
+            </p>
             {error ? (
-              <p className="alert alert-error" role="alert" style={{ marginTop: 20, maxWidth: 460 }}>
+              <p className="alert alert-error" role="alert" style={{ marginTop: 20, maxWidth: 500 }}>
                 {error}
               </p>
             ) : null}
           </div>
 
-          <div className="preview" aria-hidden="true">
-            <div className="preview-bar">
-              <i />
-              <i />
-              <i />
-              <span>미적분 · 미분계수의 뜻</span>
+          <figure className="notebook" aria-label="오답노트 예시" style={{ margin: 0 }}>
+            <div className="notebook-head">
+              <b>오답노트</b>
+              <span>미적분Ⅰ · 접선의 방정식</span>
             </div>
-            <div className="preview-board">
-              <h4>미분계수의 뜻</h4>
-              <p>
-                f′(a) = lim<sub>h→0</sub> <span className="mark">[f(a+h) − f(a)]</span> / h
-              </p>
-              <ul>
-                <li>평균변화율에서 간격 h를 0으로 보낸 값</li>
-                <li>그래프 위 x = a에서 접선의 기울기</li>
-              </ul>
+            <p className="nb-problem">
+              곡선 y = x³ − 3x 위의 점 (2, 2)에서
+              <br />
+              그은 접선의 방정식을 구하시오.
+            </p>
+            <div className="nb-line">
+              <span className="mark-ok" aria-label="맞음">✓</span>
+              y′ = 3x² − 3
             </div>
-            <div className="preview-ask">
-              <div className="q">Q. 왜 h를 0으로 보내요?</div>
-              <div className="a">한 점에서의 순간 기울기를 구하려면 두 점 사이 간격을 없애야 해서예요.</div>
+            <div className="nb-line">
+              <span className="mark-ok" aria-label="맞음">✓</span>
+              기울기 y′(2) = 9
             </div>
-          </div>
+            <div className="nb-line">
+              <span className="mark-ng" aria-label="틀림">✗</span>
+              y = 9x <s>+ 16</s>
+              <span className="pen-note">−18 + 2 = −16</span>
+            </div>
+            <div className="nb-line">
+              <span className="pen-note" style={{ marginLeft: 0 }}>→ y = 9x − 16, 이항할 때 부호 확인</span>
+            </div>
+            <span className="nb-stamp">다시 풀기</span>
+          </figure>
         </div>
       </section>
 
-      <section className="landing-section alt">
-        <div className="container">
-          <div className="landing-section-head">
-            <span className="eyebrow">주요 기능</span>
-            <h2>강의부터 오답노트까지 한 곳에서</h2>
-            <p>인강 따로, 문제집 따로 볼 필요 없어요. 진단 결과에 맞춰 강의와 문제가 정해져요.</p>
+      <section className="landing-section">
+        <div className="container feature-row">
+          <div className="feature-copy">
+            <span className="index">01 · 학습 계획</span>
+            <h2>오늘 할 공부가 정해져 있습니다</h2>
+            <p>
+              진단 결과와 수능까지 남은 날짜를 보고 하루 분량을 정합니다. 강의를 끝내면 문제가 열리고, 틀린 문제는
+              다음 날 복습으로 다시 나옵니다.
+            </p>
           </div>
-          <div className="feature-grid">
-            {FEATURES.map((feature) => (
-              <article key={feature.title} className="card feature">
-                <div className="feature-icon" aria-hidden="true">
-                  {feature.icon}
-                </div>
-                <h3>{feature.title}</h3>
-                <p>{feature.body}</p>
-              </article>
-            ))}
+          <div className="mock-card" aria-hidden="true">
+            <div className="mock-card-head">
+              <b>오늘의 학습</b>
+              <span>D-223 · 목표 120분</span>
+            </div>
+            <div className="mock-task done">
+              <span className="task-icon lesson">강의</span>
+              <div>
+                <strong>미분 · 개념 다시 보기</strong>
+                <small>32분</small>
+              </div>
+              <span className="badge badge-success">완료</span>
+            </div>
+            <div className="mock-task">
+              <span className="task-icon practice">문제</span>
+              <div>
+                <strong>미분 · 기본 문제 11문항</strong>
+                <small>38분</small>
+              </div>
+              <span className="badge badge-primary">풀이 중 4/11</span>
+            </div>
+            <div className="mock-task">
+              <span className="task-icon review">복습</span>
+              <div>
+                <strong>수열 · 어제 틀린 2문항</strong>
+                <small>16분</small>
+              </div>
+              <span className="badge">대기</span>
+            </div>
           </div>
         </div>
       </section>
 
       <section className="landing-section">
-        <div className="container">
-          <div className="landing-section-head">
-            <span className="eyebrow">학습 방법</span>
-            <h2>매일 네 단계로 공부해요</h2>
+        <div className="container feature-row flip">
+          <div className="feature-copy">
+            <span className="index">02 · 칠판 강의</span>
+            <h2>모르는 줄을 누르면 그 줄부터 다시 설명합니다</h2>
+            <p>
+              강의는 칠판에 한 장면씩 판서하며 진행됩니다. 이해가 안 되는 식을 누르고 질문하면 강의가 멈추고, 그 식을
+              기준으로 다시 풀어 줍니다.
+            </p>
           </div>
-          <div className="steps">
-            {STEPS.map((step) => (
-              <div key={step.title} className="step">
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
-              </div>
-            ))}
+          <div className="mock-board" aria-hidden="true">
+            <h4>미분계수의 정의</h4>
+            <div className="eq">f′(a) = lim (h→0) [f(a+h) − f(a)] / h</div>
+            <ul>
+              <li>평균변화율에서 h를 0으로 보낸 값</li>
+              <li>x = a에서 그은 접선의 기울기</li>
+            </ul>
+            <div className="mock-ask">
+              <div className="q">Q. 왜 h를 0으로 보내요?</div>
+              <div className="a">두 점 사이 간격을 없애야 한 점에서의 기울기가 되기 때문입니다.</div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="landing-section" style={{ paddingTop: 0 }}>
+      <section className="landing-section" style={{ paddingTop: 72 }}>
         <div className="container">
-          <div className="cta-band">
+          <div className="cta-band graph-paper">
             <div>
-              <h2>진단 평가부터 받아 보세요</h2>
-              <p>10분이면 오늘 들을 강의와 풀 문제가 정해져요.</p>
+              <h2>진단은 10분이면 끝납니다</h2>
+              <p>가입하고 바로 12문항을 풀면, 오늘 들을 강의가 정해집니다.</p>
             </div>
             <button className="btn btn-primary btn-lg" type="button" onClick={() => openAuth("signup")}>
               무료로 시작하기

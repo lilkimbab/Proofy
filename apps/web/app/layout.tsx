@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  themeColor: "#fffdf8",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -26,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
           crossOrigin="anonymous"
         />
+        <link rel="stylesheet" href="https://hangeul.pstatic.net/hangeul_static/css/maru-buri.css" />
       </head>
       <body>
         <ThemeController />
