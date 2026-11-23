@@ -18,3 +18,8 @@ coverage/
 /generated_gemini*.json
 *.tsbuildinfo
 /package-lock.json
+
+# study_agent 실행 결과물
+*.egg-info/
+.run_logs/
+/apps/study_agent/roadmap_agent/roadmaps/
