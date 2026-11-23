@@ -525,13 +525,13 @@ export function LessonRoom({ session }: LessonRoomProps) {
                   <div className="alert alert-info">
                     <div>
                       <strong>답변을 보는 중이에요</strong>
-                      다 봤으면 &lsquo;강의로 돌아가기&rsquo;를 누르세요. 그동안 강의는 멈춰 있어요.
+                      강의는 멈춰 있어요.
                     </div>
                   </div>
                 ) : (
                   <>
                     <p className="muted" style={{ fontSize: 14 }}>
-                      모르는 부분을 질문하세요. 칠판에서 판서를 누르면 그 부분에 대해 물어볼 수 있어요.
+                      칠판에서 모르는 줄을 누르면 그 줄로 질문돼요.
                     </p>
                     {selectedObject ? (
                       <div className="selected-object row-between">

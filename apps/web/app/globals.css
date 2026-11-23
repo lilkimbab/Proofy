@@ -265,13 +265,6 @@ sub {
   letter-spacing: 0.02em;
 }
 
-.eyebrow::before {
-  content: "";
-  width: 14px;
-  height: 2px;
-  background: var(--danger);
-}
-
 .mark {
   background: linear-gradient(transparent 56%, var(--marker) 56%);
   padding: 0 2px;
@@ -1096,51 +1089,11 @@ sub {
   background-size: 22px 22px;
 }
 
-.hero {
-  padding: 72px 0 80px;
-  border-bottom: 1px solid var(--border);
-}
-
-.hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 56px;
-  align-items: center;
-}
-
-.hero-copy h1 {
-  margin-top: 18px;
-  font-size: 48px;
-  line-height: 1.28;
-  letter-spacing: -0.03em;
-}
-
-.hero-copy > p {
-  margin-top: 20px;
-  max-width: 500px;
-  font-size: 17px;
-  line-height: 1.8;
-  color: var(--text-secondary);
-}
-
 .hero-actions {
   display: flex;
   gap: 10px;
   margin-top: 30px;
   flex-wrap: wrap;
-}
-
-.hero-meta {
-  margin-top: 26px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--border-strong);
-  max-width: 500px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.hero-meta b {
-  color: var(--text);
 }
 
 .resume-box {
@@ -1170,6 +1123,170 @@ sub {
 
 .resume-box .btn {
   margin-left: auto;
+}
+
+.hero2 {
+  padding: 64px 0 96px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.hero2-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 32px;
+  align-items: center;
+}
+
+.hero2-title {
+  font-size: 64px;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+}
+
+.circled {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.circled svg {
+  position: absolute;
+  left: -9%;
+  top: -30%;
+  width: 118%;
+  height: 160%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.circled path {
+  fill: none;
+  stroke: var(--danger);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: draw-pen 900ms 300ms ease-out forwards;
+}
+
+.hero2-sub {
+  margin-top: 22px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hand-note {
+  font-family: var(--hand);
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--primary);
+}
+
+.taped {
+  margin: 0;
+}
+
+.taped::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 38%;
+  width: 96px;
+  height: 24px;
+  transform: rotate(4deg);
+  background: rgba(255, 212, 59, 0.6);
+  border-left: 1px dashed rgba(0, 0, 0, 0.08);
+  border-right: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.scene {
+  padding: 96px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.scene-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 48px;
+  align-items: center;
+}
+
+.scene-inner.flip {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+}
+
+.scene-inner.flip .big-type {
+  order: 2;
+}
+
+.big-type {
+  font-size: 52px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.scene-visual {
+  position: relative;
+}
+
+.note-plan {
+  position: absolute;
+  right: -8px;
+  bottom: -46px;
+  transform: rotate(-3deg);
+}
+
+.note-board {
+  position: absolute;
+  left: 8px;
+  top: -44px;
+  transform: rotate(-4deg);
+  color: var(--board-accent);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.scene-dark {
+  background: #1b1d1f;
+  color: #f4f3ee;
+}
+
+.scene-dark .big-type {
+  color: #fff;
+}
+
+.mock-board .eq {
+  position: relative;
+}
+
+.mock-board .cursor {
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  width: 28px;
+  height: 28px;
+  fill: #fff;
+  stroke: #111;
+  stroke-width: 1.2;
+}
+
+.finale {
+  padding: 96px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.finale-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.finale .hand-note {
+  color: var(--danger);
+  transform: rotate(-4deg);
 }
 
 /* notebook page with a red-pen graded solution */
@@ -1268,49 +1385,6 @@ sub {
   font-weight: 800;
   transform: rotate(-8deg);
   opacity: 0.85;
-}
-
-.landing-section {
-  padding: 80px 0;
-}
-
-.landing-section + .landing-section {
-  border-top: 1px solid var(--border);
-}
-
-.feature-row {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 64px;
-  align-items: center;
-}
-
-.feature-row.flip {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-}
-
-.feature-row.flip .feature-copy {
-  order: 2;
-}
-
-.feature-copy .index {
-  font-family: var(--serif);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--danger);
-}
-
-.feature-copy h2 {
-  margin-top: 10px;
-  font-size: 30px;
-  line-height: 1.4;
-}
-
-.feature-copy p {
-  margin-top: 14px;
-  font-size: 16px;
-  line-height: 1.8;
-  color: var(--text-secondary);
 }
 
 .mock-card {
@@ -1426,26 +1500,6 @@ sub {
 .mock-ask .a {
   margin-top: 6px;
   font-weight: 600;
-}
-
-.cta-band {
-  padding: 44px 48px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.cta-band h2 {
-  font-size: 28px;
-}
-
-.cta-band p {
-  margin-top: 8px;
-  color: var(--text-secondary);
 }
 
 .landing-footer {
@@ -3490,6 +3544,12 @@ sub {
 
 /* ========================================================= animations == */
 
+@keyframes draw-pen {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -3575,7 +3635,9 @@ sub {
 
 @media (max-width: 960px) {
   .grid-main,
-  .hero-grid,
+  .hero2-inner,
+  .scene-inner,
+  .scene-inner.flip,
   .course-hero,
   .exam-wrap {
     grid-template-columns: minmax(0, 1fr);
@@ -3610,13 +3672,7 @@ sub {
     right: 8px;
   }
 
-  .feature-row,
-  .feature-row.flip {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
-  }
-
-  .feature-row.flip .feature-copy {
+  .scene-inner.flip .big-type {
     order: 0;
   }
 
@@ -3656,24 +3712,21 @@ sub {
     display: none;
   }
 
-  .hero {
-    padding: 40px 0 56px;
+  .hero2 {
+    padding: 40px 0 64px;
   }
 
-  .hero-copy h1 {
-    font-size: 32px;
+  .hero2-title {
+    font-size: 40px;
   }
 
-  .hero-copy > p {
-    font-size: 16px;
+  .big-type {
+    font-size: 36px;
   }
 
-  .landing-section {
-    padding: 56px 0;
-  }
-
-  .feature-copy h2 {
-    font-size: 24px;
+  .scene,
+  .finale {
+    padding: 64px 0;
   }
 
   .notebook {
@@ -3762,9 +3815,6 @@ sub {
     font-size: 14px;
   }
 
-  .cta-band {
-    padding: 32px 24px;
-  }
 
   .problem-statement {
     font-size: 17px;

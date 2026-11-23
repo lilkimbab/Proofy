@@ -71,7 +71,7 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
       setSolved(typeof attempt?.solved === "boolean" ? attempt.solved : null);
       setSubmitSummary(
         attempt?.summary ??
-          (attempt?.solved ? "정답이에요. 다음 문제로 넘어가세요." : "아쉽지만 틀렸어요. 다시 풀어 보거나 채점 결과를 확인하세요."),
+          (attempt?.solved ? "정답이에요. 다음 문제로 넘어가세요." : "틀렸어요. 한 번 더?"),
       );
     } catch (reason) {
       setSubmitError(reason instanceof Error ? reason.message : "제출하지 못했어요. 다시 시도해 주세요.");
@@ -146,7 +146,7 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
 
           {selectedProblem.isKiller ? (
             <p className="alert alert-warning" style={{ marginTop: 18 }}>
-              조건을 어떻게 해석하느냐가 핵심인 문제예요. 계산하기 전에 어떤 식을 세울지부터 정해 보세요.
+              킬러 문항. 계산보다 식 세우기가 먼저.
             </p>
           ) : null}
 
@@ -205,7 +205,7 @@ export function PracticeForm({ session, participant, onSessionChange }: Practice
               id="scratch-note"
               value={scratchNote}
               onChange={(event) => setScratchNote(event.target.value)}
-              placeholder="채점에는 들어가지 않아요. 풀이 과정을 간단히 적어 두면 복습할 때 도움이 돼요."
+              placeholder="채점 안 해요. 나중에 볼 메모"
             />
           </div>
 

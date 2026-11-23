@@ -1463,7 +1463,7 @@ class DemoService:
                 "대시보드에서 단원을 바꾸면 강의와 문제가 함께 바뀌어요.",
             ],
             "coachMessage": plan_strategy.get("coachMessage")
-            or "계획표 순서대로 강의를 듣고 문제를 풀면 돼요. 강의 중 막히는 부분은 칠판을 눌러 바로 질문하세요.",
+            or "막히면 혼자 끙끙대지 말고 칠판 눌러서 물어보기!",
             "planStrategy": plan_strategy,
             "planStrategyStatus": self._strategy_status(state),
             "strategyJobs": [

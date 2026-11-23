@@ -120,7 +120,7 @@ export default function DiagnosticPage() {
             <div>
               <span className="eyebrow">{questions.length}문항 · 제한 시간 10분</span>
               <h1 style={{ marginTop: 6 }}>진단 평가</h1>
-              <p>모르는 문제는 가장 가깝다고 생각하는 답을 고르세요. 답은 자동으로 저장돼요.</p>
+              <p>모르면 찍어도 괜찮아요. 답은 자동 저장.</p>
             </div>
           </div>
 

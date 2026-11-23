@@ -44,7 +44,7 @@ export default function ReviewPage() {
     return (
       <ErrorState
         title={review.headline || "아직 채점한 문제가 없어요"}
-        message={review.message ?? "문제를 풀고 제출하면 여기에서 채점 결과와 오답노트를 볼 수 있어요."}
+        message={review.message ?? "문제를 풀면 여기에 쌓여요."}
         action={
           <Link className="btn btn-primary" href="/practice">
             문제 풀러 가기
@@ -85,8 +85,8 @@ export default function ReviewPage() {
               <p>
                 {review.summary ??
                   (review.solved
-                    ? "풀이 흐름도 잘 맞았어요. 같은 묶음의 다음 문제로 넘어가세요."
-                    : "어디서 틀렸는지 아래에서 확인하고 한 번 더 풀어 보세요.")}
+                    ? "다음 문제로 가요."
+                    : "어디서 틀렸는지 보고 한 번 더.")}
               </p>
             </div>
           </section>
@@ -95,7 +95,6 @@ export default function ReviewPage() {
             <div className="card-header">
               <div>
                 <h3>풀이 단계별 피드백</h3>
-                <p>기준 풀이와 비교한 결과예요</p>
               </div>
             </div>
             <div className="card-body stack-sm" style={{ gap: 10 }}>
@@ -109,8 +108,8 @@ export default function ReviewPage() {
                   </h4>
                   <p>
                     {review.solved
-                      ? "최종 답이 맞았어요. 같은 묶음에서 조금 더 어려운 문제로 넘어가면 돼요."
-                      : "최종 답이 틀렸어요. 관련 강의 장면을 다시 보고 한 번 더 풀어 보세요."}
+                      ? "맞았어요."
+                      : "답이 달라요. 강의에서 이 부분만 다시 보고 오기."}
                   </p>
                 </article>
               ) : null}
@@ -148,7 +147,6 @@ export default function ReviewPage() {
               <div className="card-header">
                 <div>
                   <h3>오답노트</h3>
-                  <p>틀린 문제는 자동으로 여기에 정리돼요</p>
                 </div>
                 <span className="badge">{review.mistakeNotes.length}개</span>
               </div>
