@@ -6,8 +6,8 @@ import { ThemeController } from "@/components/theme-controller";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Proofy · 수능 수학",
-  description: "진단 평가, AI 칠판 강의, 풀이 채점, 오답노트까지 한 곳에서 하는 수능 수학 공부",
+  title: "Proofy · 내 자료로 강의와 문제",
+  description: "넣은 자료로 칠판 강의를 듣고, 그 자료에서 나온 문제를 푸는 AI 과외 선생님",
 };
 
 export const viewport: Viewport = {

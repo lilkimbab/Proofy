@@ -1,15 +1,16 @@
 # Proofy
 
-**해설지 봐도 모르겠던 그 한 줄, 칠판에서 다시.**
+**자료를 넣으면, 강의가 되고 문제가 됩니다.**
 
-고3 수능 수학 AI 코치. 진단 12문제로 시작합니다.
+교재, 수업 PDF, 필기. 쌓아만 둔 자료로 칠판 강의를 하고 문제를 만들어 주는 AI 과외 선생님.
 
 | 이런 순간 | Proofy |
 |---|---|
-| 오늘 뭐 하지? | 진단과 설문으로 수능 날까지의 일간·주간 계획. 첫 화면엔 지금 할 공부 하나만. |
-| 해설지 봐도 모르겠던 그 한 줄 | 칠판 강의 중에 그 줄을 콕 눌러 질문. 칠판이 그 자리에서 다시 풀어 줌. |
-| 답은 맞았는데 풀이가 불안함 | 단계마다 SymPy로 채점. 식 모양이 달라도 같으면 정답, 틀리면 부호인지 계산인지 개념인지까지. |
-| 같은 데서 또 틀림 | 틀린 문제는 오답노트로, 며칠 뒤 계획에 다시. |
+| 자료는 쌓였는데 어디서부터 볼지 모르겠음 | 넣은 자료를 개념 흐름대로 나누고, 오늘 볼 분량부터 |
+| 교재 봐도 모르겠던 그 한 줄 | 칠판 강의 중에 그 줄을 콕 눌러 질문. 칠판이 그 자리에서 다시 풀어 줌 |
+| 이 부분 문제가 더 있었으면 | 그 자료에서 문제를 만듦. 수학은 SymPy로 정답을 검산한 것만 |
+| 답은 맞았는데 풀이가 불안함 | 단계마다 채점. 틀리면 어느 단계에서 왜 틀렸는지 |
+| 같은 데서 또 틀림 | 오답노트로, 며칠 뒤 계획에 다시 |
 
 ```
 미분계수의 정의 활용
@@ -23,13 +24,41 @@ Q. 왜 갑자기 g′(2)가 돼요?
 A. 분자가 g(x) − g(2) 꼴이라서요. 미분계수 정의 그대로예요.
 ```
 
-공통수학부터 대수, 미적분Ⅰ·Ⅱ, 확률과 통계, 기하까지 7과목 22단원 (2022 개정 교육과정, 2028학년도 수능 기준).
+자료가 없어도 바로 써 볼 수 있게 수능 수학 7과목 22단원(2022 개정 교육과정)이 기본 자료로 들어 있습니다.
+
+---
+
+## 자료가 강의와 문제가 되기까지
+
+```mermaid
+flowchart LR
+    A[자료 넣기<br/>PDF · DOCX · TXT] --> B[읽고 나누기<br/>요약 · 개념 흐름]
+    B --> C[(자료 검색<br/>RAG)]
+    B --> P[학습 계획<br/>복습 일정]
+    C --> D[칠판 강의]
+    C --> E[문제 출제]
+    D -- 콕 질문 --> C
+    E --> F[풀이 · 채점]
+    F --> G[오답노트]
+    G --> P
+    P --> D
+```
+
+| 단계 | 맡는 곳 | 지금 |
+|---|---|---|
+| 자료 넣기, 읽고 나누기 | `study_agent/document_agent` | 핵심 요약, 개념 흐름 순서의 설명, 확인 문제, 원문 페이지 표시, 원문 근거 검사까지 구현. 따로 실행되고 Proofy 화면(`/documents`)과 LLM 키에는 아직 연결 전 |
+| 자료 검색(RAG) | `study_agent/rag_server` | 임베딩 `bge-m3`, 재정렬 `bge-reranker-v2-m3`. 따로 실행되고 Proofy와 연결 전 |
+| 학습 계획 | Proofy `planner`, `study_agent/roadmap_agent` | Proofy 계획은 기본 자료로 동작. 넣은 자료로 계획과 복습 일정을 짜는 roadmap_agent는 연결 전 |
+| 칠판 강의 | Proofy 강의 플레이어 | 기본 자료로 동작(장면 1,002개). 넣은 자료로 칠판 장면을 만드는 부분은 아직 |
+| 강의 중 질문 | Proofy, `study_agent/tutor_agent` | Proofy는 칠판에 풀이 장면을 끼워 답함. 자료 원문을 근거로 답하는 tutor_agent는 연결 전 |
+| 문제 출제 | `study_agent/problem_agent`, Proofy 고난도 파이프라인 | problem_agent는 자료 조각으로 객관식·주관식·OX·빈칸 등을 만들고 품질 검사(연결 전). 고난도 파이프라인(아래)은 동작하지만 지금은 단원별 출제 틀로 출제하고, 자료 조각을 입력으로 받는 부분은 아직 |
+| 풀이 · 채점 · 오답노트 | Proofy | 동작. 수학은 단계별 SymPy 채점 |
 
 ---
 
 ## 고난도 문제는 이렇게 만듭니다
 
-목표는 수능 22번 수준. LLM이 낸 문제를 그대로 학생 앞에 두지 않습니다.
+자료에서 쉬운 문제를 뽑기는 쉽습니다. 어려운 문제는 틀리기 쉽습니다. 목표는 수능 22번 수준이고, LLM이 낸 문제를 그대로 학생 앞에 두지 않습니다.
 
 ```mermaid
 flowchart LR
@@ -71,14 +100,14 @@ flowchart LR
 
 ---
 
-## 지금 어디까지 왔나
+## 아직 남은 것
 
 | 영역 | 상태 |
 |---|---|
-| 고난도 문제 | 무료 Gemini Flash로 맞는 4점 문제(20~21번급)까지 확인. 22번 수준과 "답이 하나인지" 자동 확정은 아직이라 사람 검토가 마지막 관문. 승인한 문제를 앱 문제 은행에 넣는 연결은 다음 작업. |
-| 문제 은행 | 22단원 924문항. 대부분 숫자만 바꾸는 템플릿이라 2~3점 수준이고, 위 파이프라인 문제로 바꿔 가는 중. |
-| 강의 | 단원별 칠판 장면 1,002개. 지금 푸는 문제의 해설 중심으로 다시 쓰는 중. |
-| 계정 | 데모용 인증. 공개 배포 전에 토큰 인증과 관리자 기능 잠금이 필요. |
+| 자료 연결 | 업로드, 검색, 자료 기반 질문, 자료 기반 문제, 계획이 `study_agent`에 따로 있음. Proofy 화면과 API에 붙이는 것이 다음 큰 작업. |
+| 고난도 문제 | 무료 Gemini Flash로 맞는 4점 문제(20~21번급)까지 확인. 22번 수준과 "답이 하나인지" 자동 확정은 아직이라 사람 검토가 마지막 관문. |
+| 기본 문제 은행 | 22단원 924문항. 대부분 숫자만 바꾸는 템플릿이라 2~3점 수준. |
+| 계정 | 데모용 인증. 공개 배포 전에 토큰 인증과 관리자 기능 잠금이 필요. 로그인도 Proofy 자체 방식과 `study_agent`의 Supabase 중 하나로 정리해야 함. |
 
 ---
 
@@ -86,7 +115,7 @@ flowchart LR
 
 ```bash
 ./scripts/bootstrap.sh    # 가상환경, 패키지, .env 생성
-./scripts/start-all.sh    # API와 화면을 함께 띄움
+./scripts/start-all.sh    # Proofy API와 화면을 함께 띄움
 ```
 
 - 화면: http://localhost:3000
@@ -95,6 +124,27 @@ flowchart LR
 
 LLM 키가 없어도 실행됩니다. 강의 중 질문에는 내장 답변이 나가고, 문제 출제만 키가 필요합니다.
 
+### 자료 쪽 서버 (선택)
+
+`apps/study_agent`의 서버는 Proofy와 따로 띄웁니다. 각 폴더의 `requirements.txt`로 가상환경을 만든 뒤:
+
+```bash
+# 자료 검색(RAG) 서버, 8001번
+cd apps/study_agent/rag_server
+API_PORT=8001 TUNNEL_BACKEND=none OCR_PROVIDER=none .venv/bin/python server.py
+
+# 자료·계획·문제·튜터 에이전트를 묶은 main_server, 8010번 (기본값 8000은 Proofy API와 겹침)
+cd apps/study_agent/main_server
+set -a && . ../problem_agent/.env.free.example && set +a
+API_PORT=8010 RAG_SERVER_URL=http://127.0.0.1:8001 RAG_AGENT_URL=http://127.0.0.1:8001 \
+  SEARCH_AGENT_URL=http://127.0.0.1:8001 DEMO_SEARCH_ENABLED=false \
+  DATABASE_URL=sqlite+pysqlite:///./study_agent_free.db .venv/bin/python server.py
+```
+
+위 설정은 LLM 키 없이 도는 구성이라, 튜터와 문제 생성은 대체 로직으로만 답합니다. 상태는 `http://127.0.0.1:8010/api/agents/status`에서 확인합니다.
+
+에이전트별 설정은 [`apps/study_agent/README.md`](apps/study_agent/README.md)와 각 에이전트 폴더의 문서를 참고하세요.
+
 ### LLM 설정
 
 키는 루트 `.env`에만 넣습니다(`.env.example` 참고).
@@ -102,10 +152,10 @@ LLM 키가 없어도 실행됩니다. 강의 중 질문에는 내장 답변이 �
 | 쓰는 곳 | 모델 |
 |---|---|
 | 강의 중 질문, 계획 전략 | Gemini(`APP_GEMINI_MODEL`). 실패하면 Groq `openai/gpt-oss-120b`가 대신 답하고 5분 동안 Gemini를 건너뜀 |
-| 문제 출제 | Gemini Flash. `--model`로 바꾸거나 예비 모델을 줄 수 있음 |
+| 고난도 문제 출제 | Gemini Flash. `--model`로 바꾸거나 예비 모델을 줄 수 있음 |
 | 반례 찾기, 풀이 | Groq `openai/gpt-oss-120b`(강한 모델), `openai/gpt-oss-20b`(약한 모델) |
 
-### 문제 출제
+### 고난도 문제 출제
 
 `apps/api`에서 실행합니다. 스크립트가 루트 `.env`를 직접 읽습니다. 한 문제에 5~15분 걸립니다.
 
@@ -127,12 +177,12 @@ LLM 키가 없어도 실행됩니다. 강의 중 질문에는 내장 답변이 �
 | 경로 | 내용 |
 |---|---|
 | `apps/web` | Next.js 15, React 18, TypeScript. 화면 전체와 `MathText` 수식 표시 |
-| `apps/api` | FastAPI. 계획, 강의 세션, 채점, 오답노트, 문제 출제 |
+| `apps/api` | FastAPI. 계획, 칠판 강의 세션, 채점, 오답노트, 고난도 문제 출제 |
 | `apps/api/app/services/problem_factory.py` | 고난도 문제 출제 파이프라인 |
 | `apps/api/app/domain/problem_verifier.py` | LLM이 쓴 조건 검사식을 격리해서 SymPy로 실행 |
 | `apps/api/app/domain/evaluator.py` | 학생 풀이 단계별 SymPy 채점 |
-| `apps/api/app/content` | 커리큘럼·강의·문제 생성기, 출제 틀 |
-| `apps/study_agent` | 자료 업로드, RAG, 로드맵, 문제 생성, 튜터 에이전트. 아직 Proofy와 연결 전 |
+| `apps/api/app/content` | 기본 자료(커리큘럼·강의·문제) 생성기, 출제 틀 |
+| `apps/study_agent` | 자료 업로드·요약(document), 검색(rag), 계획(roadmap), 문제(problem), 튜터(tutor) 에이전트와 묶음 서버(main_server) |
 
 테스트 (71개, 3분쯤):
 

@@ -124,7 +124,7 @@ export default function WelcomePage() {
             <p className="auth-line">모르는 줄, 콕.</p>
 
             <div className="auth-board">
-              <span className="auth-board-tag">수학Ⅱ · 4점</span>
+              <span className="auth-board-tag">교재 PDF p.48 · 4점</span>
               <p className="auth-board-q">
                 f(x) = x³ − 3x² + a 일 때, 방정식 |f(x)| = 2 의
                 <br />
@@ -146,15 +146,15 @@ export default function WelcomePage() {
             <div className="auth-sticky" aria-hidden="true">
               <span>오늘</span>
               <p>
-                미분 강의 32분
-                <br />→ 문제 11개
+                3장 강의 32분
+                <br />→ 3장 문제 11개
                 <br />→ 어제 틀린 2개
               </p>
             </div>
           </div>
 
-          <ul className="auth-subjects" aria-label="과목">
-            {["공통수학", "대수", "미적분", "확률과 통계", "기하"].map((subject) => (
+          <ul className="auth-subjects" aria-label="넣을 수 있는 자료">
+            {["수업 PDF", "교재 PDF", "강의 노트", "DOCX", "TXT"].map((subject) => (
               <li key={subject}>{subject}</li>
             ))}
           </ul>
@@ -279,17 +279,17 @@ export default function WelcomePage() {
         <div className="container hero2-inner">
           <div className="hero2-copy">
             <h1 className="hero2-title">
-              해설지 봐도
+              쌓아만 두고
               <br />
-              모르겠던{" "}
+              안 본{" "}
               <span className="circled">
-                그 한 줄
+                그 PDF
                 <svg viewBox="0 0 300 110" preserveAspectRatio="none" aria-hidden="true">
                   <path d="M18 62 C 20 18, 150 6, 252 20 C 300 28, 296 84, 214 96 C 140 108, 30 100, 14 66 C 8 50, 40 34, 70 30" />
                 </svg>
               </span>
             </h1>
-            <p className="hero2-sub">그 줄만 콕 집어서 물어보세요.</p>
+            <p className="hero2-sub">넣으면 강의가 되고, 문제가 돼요.</p>
 
             {session ? (
               <div className="resume-box">
@@ -314,7 +314,7 @@ export default function WelcomePage() {
               ) : (
                 <>
                   <button className="btn btn-primary btn-lg" type="button" onClick={() => openAuth("signup")}>
-                    진단부터 풀어보기
+                    시작하기
                   </button>
                   <button className="btn btn-ghost btn-lg" type="button" onClick={() => openAuth("login")}>
                     로그인
@@ -332,7 +332,7 @@ export default function WelcomePage() {
           <figure className="notebook taped" aria-label="오답노트 예시">
             <div className="notebook-head">
               <b>오답노트</b>
-              <span>수학Ⅱ · 정적분으로 정의된 함수 · 4점</span>
+              <span>교재 PDF p.34 · 정적분으로 정의된 함수</span>
             </div>
             <p className="nb-problem">
               모든 실수 x에 대하여 ∫₁ˣ f(t)dt = x³ + ax² − 2
@@ -370,12 +370,12 @@ export default function WelcomePage() {
             <div className="mock-card" aria-hidden="true">
               <div className="mock-card-head">
                 <b>오늘의 학습</b>
-                <span>D-223</span>
+                <span>D-23</span>
               </div>
               <div className="mock-task done">
                 <span className="task-icon lesson">강의</span>
                 <div>
-                  <strong>미분 · 개념 다시 보기</strong>
+                  <strong>수업 PDF 3장 · 칠판 강의</strong>
                   <small>32분</small>
                 </div>
                 <span className="badge badge-success">완료</span>
@@ -383,7 +383,7 @@ export default function WelcomePage() {
               <div className="mock-task">
                 <span className="task-icon practice">문제</span>
                 <div>
-                  <strong>미분 · 기본 문제 11문항</strong>
+                  <strong>3장에서 나온 문제 11문항</strong>
                   <small>38분</small>
                 </div>
                 <span className="badge badge-primary">4/11</span>
@@ -391,14 +391,14 @@ export default function WelcomePage() {
               <div className="mock-task">
                 <span className="task-icon review">복습</span>
                 <div>
-                  <strong>수열 · 어제 틀린 2문항</strong>
+                  <strong>2장 · 어제 틀린 2문항</strong>
                   <small>16분</small>
                 </div>
                 <span className="badge">대기</span>
               </div>
             </div>
             <span className="hand-note note-plan" aria-hidden="true">
-              ↖ 진단 결과대로 매일 알아서
+              ↖ 넣은 자료, 시험 날까지 나눠서
             </span>
           </div>
         </div>
@@ -413,7 +413,7 @@ export default function WelcomePage() {
           </h2>
           <div className="scene-visual">
             <div className="mock-board" aria-hidden="true">
-              <h4>미분계수의 정의 활용</h4>
+              <h4>p.12 · 미분계수의 정의 활용</h4>
               <div className="board-lines">
                 <span>lim (x→2) {"{"}f(x) − 3{"}"} / (x − 2) = 5</span>
                 <span className="dim">⇒ f(2) = 3, f′(2) = 5</span>
@@ -440,7 +440,7 @@ export default function WelcomePage() {
 
       <section className="finale graph-paper">
         <div className="container finale-inner">
-          <h2 className="big-type">일단 12문제만 풀어봐요.</h2>
+          <h2 className="big-type">자료 없으면, 수학 12문제부터.</h2>
           <button className="btn btn-primary btn-lg" type="button" onClick={() => openAuth("signup")}>
             진단 시작
           </button>

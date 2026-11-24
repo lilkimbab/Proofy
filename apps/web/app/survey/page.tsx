@@ -14,7 +14,7 @@ const TOTAL_STEPS = 6;
 
 const STEP_COPY: Record<SurveyStep, { title: string; lead: string }> = {
   0: { title: "이름을 알려 주세요", lead: "강의와 피드백에 표시돼요." },
-  1: { title: "수능 날짜를 확인해 주세요", lead: "남은 기간에 맞춰 학습 계획을 짜요." },
+  1: { title: "시험 날짜를 알려 주세요", lead: "남은 기간에 맞춰 학습 계획을 짜요." },
   2: { title: "목표 점수를 입력해 주세요", lead: "원점수 기준. 계획은 수학 점수에 맞춰요." },
   3: { title: "공부 시간을 알려 주세요", lead: "하루 학습량을 정할 때 써요." },
   4: { title: "어떤 강의가 잘 맞나요?", lead: "설명의 길이와 속도를 맞춰요." },

@@ -101,7 +101,7 @@ export default function DashboardPage() {
         </div>
         <dl className="status-strip" aria-label="학습 현황">
           <div>
-            <dt>수능</dt>
+            <dt>시험</dt>
             <dd>D-{stats.daysLeft}</dd>
           </div>
           <div>
