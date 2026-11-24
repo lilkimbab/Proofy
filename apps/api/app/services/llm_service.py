@@ -13,6 +13,11 @@ from app.core.config import settings
 GEMINI_COOLDOWN_SECONDS = 300
 _gemini_cooldown_until = [0.0]
 
+# Gemini takes 12-17 s on harder lesson questions; Groq answers in 1-7 s.
+# Keep question + fallback under the web client's wait (apps/web/lib/api.ts lessonQuestion).
+QUESTION_TIMEOUT_SECONDS = 20
+FALLBACK_TIMEOUT_SECONDS = 10
+
 
 def _as_sentence(text: str | None) -> str:
     """Trim scene text and make sure it ends like a sentence."""
@@ -61,7 +66,7 @@ class LessonLLMService:
         self.gemini_api_key = settings.gemini_api_key.strip()
         self.gemini_model = settings.gemini_model.strip()
         self.timeout_seconds = settings.llm_timeout_seconds
-        self.question_timeout_seconds = max(4, min(self.timeout_seconds, 8))
+        self.question_timeout_seconds = max(4, min(self.timeout_seconds, QUESTION_TIMEOUT_SECONDS))
         self.strategy_timeout_seconds = max(6, min(self.timeout_seconds, 12))
 
     @property
@@ -499,7 +504,9 @@ class LessonLLMService:
             if reply is None and has_fallback:
                 # Gemini free tier often answers 503 (busy) or runs out of daily quota;
                 # fall back to the OpenAI-compatible provider (e.g. Groq) when it is configured.
-                return self._chat_generic(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+                # The Gemini attempt already used up part of the wait, so keep this one short.
+                fallback_timeout = min(timeout_seconds or self.timeout_seconds, FALLBACK_TIMEOUT_SECONDS)
+                return self._chat_generic(system_prompt, user_prompt, timeout_seconds=fallback_timeout)
             return reply
         return self._chat_generic(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
 

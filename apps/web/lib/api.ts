@@ -129,10 +129,11 @@ export const api = {
     selectedObjectId?: string | null;
     runtimeSceneIds?: string[];
   }) =>
+    // The server may spend 20 s on Gemini and 10 s more on the fallback model.
     request<LessonQuestionResponse>("/api/lesson/question", {
       method: "POST",
       body: JSON.stringify(payload)
-    }, { timeoutMs: 20000 }),
+    }, { timeoutMs: 35000 }),
   completeLesson: () =>
     request<{
       dashboard: DashboardResponse;
