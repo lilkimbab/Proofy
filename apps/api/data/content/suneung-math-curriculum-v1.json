@@ -67278,11 +67278,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "1 또는 2"
+              "placeholder": "2"
             },
             {
               "label": "Step 3. 정리",
-              "placeholder": "1 또는 2"
+              "placeholder": "2"
             }
           ],
           "finalPrompt": "",
@@ -67304,37 +67304,37 @@
               },
               {
                 "label": "Step 2. 계산 또는 판정",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "1 또는 2"
+                  "2"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "1 또는 2"
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "2"
               },
               {
                 "label": "Step 3. 정리",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "1 또는 2"
+                  "2"
                 ],
-                "hint": "요구한 값 또는 식을 정리하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "1 또는 2"
+                "hint": "조건에 맞는 값만 남기세요.",
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "2"
               }
             ],
             "final": {
               "label": "최종 답",
-              "mode": "exact-match",
+              "mode": "solution-set",
               "expected": [
-                "1 또는 2"
+                "2"
               ],
-              "hint": "최종 값을 적으세요.",
-              "successReason": "정답 형식과 내용이 정확합니다.",
-              "errorType": "exact-match",
-              "expectedDisplay": "1 또는 2"
+              "hint": "구한 값을 모두 적으세요.",
+              "successReason": "해를 빠짐없이 정리했습니다.",
+              "errorType": "solution-set",
+              "expectedDisplay": "2"
             }
           },
           "curriculumLinks": {
@@ -67367,11 +67367,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "3"
+              "placeholder": "7"
             },
             {
               "label": "Step 3. 값",
-              "placeholder": "3"
+              "placeholder": "7"
             }
           ],
           "finalPrompt": "",
@@ -67395,35 +67395,35 @@
                 "label": "Step 2. 계산 또는 판정",
                 "mode": "exact-match",
                 "expected": [
-                  "3"
+                  "7"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
                 "successReason": "정답 형식과 내용이 정확합니다.",
                 "errorType": "exact-match",
-                "expectedDisplay": "3"
+                "expectedDisplay": "7"
               },
               {
                 "label": "Step 3. 값",
                 "mode": "numeric",
                 "expected": [
-                  "3"
+                  "7"
                 ],
                 "hint": "최종 값을 정리하세요.",
                 "successReason": "수치 계산이 정확합니다.",
                 "errorType": "arithmetic",
-                "expectedDisplay": "3"
+                "expectedDisplay": "7"
               }
             ],
             "final": {
               "label": "최종 답",
               "mode": "numeric",
               "expected": [
-                "3"
+                "7"
               ],
               "hint": "최종 값을 적으세요.",
               "successReason": "수치 계산이 정확합니다.",
               "errorType": "arithmetic",
-              "expectedDisplay": "3"
+              "expectedDisplay": "7"
             }
           },
           "curriculumLinks": {
@@ -90557,7 +90557,7 @@
         {
           "id": "curr-common1-equation-drill-008",
           "title": "초고난도 · 공통근 매개변수 역추적",
-          "statement": "방정식 x^2-5x+6=0과 x^2+ax+6=0이 공통인 근을 하나 가질 때 a의 값을 모두 구하시오.",
+          "statement": "방정식 x^2-5x+6=0과 x^2+ax-6=0이 공통인 근을 하나만 가질 때 a의 값을 모두 구하시오.",
           "coachHint": "한계돌파 앞쪽 문제는 계산 반복보다 해석 골격을 세우는 연습 구간입니다. 이 문제 묶음은 쉬운 반복이 아니라 구조 판단을 먼저 잡는 초고난도 한계돌파입니다.",
           "expectedOutline": [
             "핵심 구조 복원",
@@ -90574,11 +90574,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "a=-5 또는 a=-4"
+              "placeholder": "-1, 1"
             },
             {
               "label": "Step 3. 정리",
-              "placeholder": "a=-5 또는 a=-4"
+              "placeholder": "-1, 1"
             }
           ],
           "finalPrompt": "",
@@ -90600,37 +90600,40 @@
               },
               {
                 "label": "Step 2. 계산 또는 판정",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "a=-5 또는 a=-4"
+                  "-1",
+                  "1"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "a=-5 또는 a=-4"
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "-1, 1"
               },
               {
                 "label": "Step 3. 정리",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "a=-5 또는 a=-4"
+                  "-1",
+                  "1"
                 ],
-                "hint": "요구한 값 또는 식을 정리하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "a=-5 또는 a=-4"
+                "hint": "조건에 맞는 값만 남기세요.",
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "-1, 1"
               }
             ],
             "final": {
               "label": "최종 답",
-              "mode": "exact-match",
+              "mode": "solution-set",
               "expected": [
-                "a=-5 또는 a=-4"
+                "-1",
+                "1"
               ],
-              "hint": "최종 값을 적으세요.",
-              "successReason": "정답 형식과 내용이 정확합니다.",
-              "errorType": "exact-match",
-              "expectedDisplay": "a=-5 또는 a=-4"
+              "hint": "구한 값을 모두 적으세요.",
+              "successReason": "해를 빠짐없이 정리했습니다.",
+              "errorType": "solution-set",
+              "expectedDisplay": "-1, 1"
             }
           },
           "curriculumLinks": {
@@ -90646,7 +90649,7 @@
         {
           "id": "curr-common1-equation-drill-009",
           "title": "초고난도 · 판별식으로 실근 개수",
-          "statement": "이차방정식 x^2-4x+k=0이 서로 다른 두 실근을 갖도록 하는 정수 k의 개수를 구하시오.",
+          "statement": "이차방정식 x^2-4x+k=0이 서로 다른 두 실근을 갖도록 하는 자연수 k의 개수를 구하시오.",
           "coachHint": "한계돌파 앞쪽 문제는 계산 반복보다 해석 골격을 세우는 연습 구간입니다. 이 문제 묶음은 쉬운 반복이 아니라 구조 판단을 먼저 잡는 초고난도 한계돌파입니다.",
           "expectedOutline": [
             "핵심 구조 복원",
@@ -90663,11 +90666,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "4"
+              "placeholder": "3"
             },
             {
               "label": "Step 3. 값",
-              "placeholder": "4"
+              "placeholder": "3"
             }
           ],
           "finalPrompt": "",
@@ -90691,35 +90694,35 @@
                 "label": "Step 2. 계산 또는 판정",
                 "mode": "exact-match",
                 "expected": [
-                  "4"
+                  "3"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
                 "successReason": "정답 형식과 내용이 정확합니다.",
                 "errorType": "exact-match",
-                "expectedDisplay": "4"
+                "expectedDisplay": "3"
               },
               {
                 "label": "Step 3. 값",
                 "mode": "numeric",
                 "expected": [
-                  "4"
+                  "3"
                 ],
                 "hint": "최종 값을 정리하세요.",
                 "successReason": "수치 계산이 정확합니다.",
                 "errorType": "arithmetic",
-                "expectedDisplay": "4"
+                "expectedDisplay": "3"
               }
             ],
             "final": {
               "label": "최종 답",
               "mode": "numeric",
               "expected": [
-                "4"
+                "3"
               ],
               "hint": "최종 값을 적으세요.",
               "successReason": "수치 계산이 정확합니다.",
               "errorType": "arithmetic",
-              "expectedDisplay": "4"
+              "expectedDisplay": "3"
             }
           },
           "curriculumLinks": {
@@ -90752,11 +90755,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "1 또는 2"
+              "placeholder": "2"
             },
             {
               "label": "Step 3. 정리",
-              "placeholder": "1 또는 2"
+              "placeholder": "2"
             }
           ],
           "finalPrompt": "",
@@ -90778,37 +90781,37 @@
               },
               {
                 "label": "Step 2. 계산 또는 판정",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "1 또는 2"
+                  "2"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "1 또는 2"
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "2"
               },
               {
                 "label": "Step 3. 정리",
-                "mode": "exact-match",
+                "mode": "solution-set",
                 "expected": [
-                  "1 또는 2"
+                  "2"
                 ],
-                "hint": "요구한 값 또는 식을 정리하세요.",
-                "successReason": "정답 형식과 내용이 정확합니다.",
-                "errorType": "exact-match",
-                "expectedDisplay": "1 또는 2"
+                "hint": "조건에 맞는 값만 남기세요.",
+                "successReason": "해를 빠짐없이 정리했습니다.",
+                "errorType": "solution-set",
+                "expectedDisplay": "2"
               }
             ],
             "final": {
               "label": "최종 답",
-              "mode": "exact-match",
+              "mode": "solution-set",
               "expected": [
-                "1 또는 2"
+                "2"
               ],
-              "hint": "최종 값을 적으세요.",
-              "successReason": "정답 형식과 내용이 정확합니다.",
-              "errorType": "exact-match",
-              "expectedDisplay": "1 또는 2"
+              "hint": "구한 값을 모두 적으세요.",
+              "successReason": "해를 빠짐없이 정리했습니다.",
+              "errorType": "solution-set",
+              "expectedDisplay": "2"
             }
           },
           "curriculumLinks": {
@@ -90930,11 +90933,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "-2"
+              "placeholder": "6"
             },
             {
               "label": "Step 3. 값",
-              "placeholder": "-2"
+              "placeholder": "6"
             }
           ],
           "finalPrompt": "",
@@ -90958,35 +90961,35 @@
                 "label": "Step 2. 계산 또는 판정",
                 "mode": "exact-match",
                 "expected": [
-                  "-2"
+                  "6"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
                 "successReason": "정답 형식과 내용이 정확합니다.",
                 "errorType": "exact-match",
-                "expectedDisplay": "-2"
+                "expectedDisplay": "6"
               },
               {
                 "label": "Step 3. 값",
                 "mode": "numeric",
                 "expected": [
-                  "-2"
+                  "6"
                 ],
                 "hint": "최종 값을 정리하세요.",
                 "successReason": "수치 계산이 정확합니다.",
                 "errorType": "arithmetic",
-                "expectedDisplay": "-2"
+                "expectedDisplay": "6"
               }
             ],
             "final": {
               "label": "최종 답",
               "mode": "numeric",
               "expected": [
-                "-2"
+                "6"
               ],
               "hint": "최종 값을 적으세요.",
               "successReason": "수치 계산이 정확합니다.",
               "errorType": "arithmetic",
-              "expectedDisplay": "-2"
+              "expectedDisplay": "6"
             }
           },
           "curriculumLinks": {
@@ -91108,11 +91111,11 @@
             },
             {
               "label": "Step 2. 계산 또는 판정",
-              "placeholder": "3"
+              "placeholder": "7"
             },
             {
               "label": "Step 3. 값",
-              "placeholder": "3"
+              "placeholder": "7"
             }
           ],
           "finalPrompt": "",
@@ -91136,35 +91139,35 @@
                 "label": "Step 2. 계산 또는 판정",
                 "mode": "exact-match",
                 "expected": [
-                  "3"
+                  "7"
                 ],
                 "hint": "복원한 구조를 끝까지 계산하거나 판정하세요.",
                 "successReason": "정답 형식과 내용이 정확합니다.",
                 "errorType": "exact-match",
-                "expectedDisplay": "3"
+                "expectedDisplay": "7"
               },
               {
                 "label": "Step 3. 값",
                 "mode": "numeric",
                 "expected": [
-                  "3"
+                  "7"
                 ],
                 "hint": "최종 값을 정리하세요.",
                 "successReason": "수치 계산이 정확합니다.",
                 "errorType": "arithmetic",
-                "expectedDisplay": "3"
+                "expectedDisplay": "7"
               }
             ],
             "final": {
               "label": "최종 답",
               "mode": "numeric",
               "expected": [
-                "3"
+                "7"
               ],
               "hint": "최종 값을 적으세요.",
               "successReason": "수치 계산이 정확합니다.",
               "errorType": "arithmetic",
-              "expectedDisplay": "3"
+              "expectedDisplay": "7"
             }
           },
           "curriculumLinks": {

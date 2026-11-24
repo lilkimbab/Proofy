@@ -5750,17 +5750,26 @@ def _generic_curated_problem_bank(
     problems: list[dict] = []
     index = start_index
     for title, statement, focus, answer, problem_type, mode in specs:
-        exact_final = _uses_exact_final(answer, mode)
-        final = (
-            exact_step("최종 답", answer, "최종 값을 적으세요.")
-            if exact_final
-            else numeric_step("최종 답", answer, "최종 값을 적으세요.")
-        )
-        third_step = (
-            exact_step("Step 3. 정리", answer, "요구한 값 또는 식을 정리하세요.")
-            if exact_final
-            else numeric_step("Step 3. 값", answer, "최종 값을 정리하세요.")
-        )
+        if mode == "set":
+            # "값을 모두 구하시오": grade the set of values, so a missing or an extra value is wrong
+            # ("1 또는 2" for a single answer 2 must not pass, as it would in numeric mode).
+            values = [value.strip() for value in answer.split("또는")]
+            second_step = solution_step("Step 2. 계산 또는 판정", values, "복원한 구조를 끝까지 계산하거나 판정하세요.")
+            third_step = solution_step("Step 3. 정리", values, "조건에 맞는 값만 남기세요.")
+            final = solution_step("최종 답", values, "구한 값을 모두 적으세요.")
+        else:
+            exact_final = _uses_exact_final(answer, mode)
+            second_step = exact_step("Step 2. 계산 또는 판정", answer, "복원한 구조를 끝까지 계산하거나 판정하세요.")
+            final = (
+                exact_step("최종 답", answer, "최종 값을 적으세요.")
+                if exact_final
+                else numeric_step("최종 답", answer, "최종 값을 적으세요.")
+            )
+            third_step = (
+                exact_step("Step 3. 정리", answer, "요구한 값 또는 식을 정리하세요.")
+                if exact_final
+                else numeric_step("Step 3. 값", answer, "최종 값을 정리하세요.")
+            )
         problems.append(
             _drill_problem(
                 unit=unit,
@@ -5769,7 +5778,7 @@ def _generic_curated_problem_bank(
                 statement=statement,
                 steps=[
                     exact_step("Step 1. 핵심 복원", focus, "문제의 핵심 구조를 먼저 복원하세요."),
-                    exact_step("Step 2. 계산 또는 판정", answer, "복원한 구조를 끝까지 계산하거나 판정하세요."),
+                    second_step,
                     third_step,
                 ],
                 final=final,
@@ -5816,13 +5825,13 @@ GENERIC_CURATED_ADVANCED_SPECS: dict[str, list[tuple[str, str, str, str, str, st
         ("근의 합과 제곱합", "이차방정식 x^2-5x+6=0의 두 근을 α, β라 할 때 α^2+β^2의 값을 구하시오.", "(α+β)^2-2αβ", "13", "근의 합과 제곱합", "numeric"),
         ("역수의 합", "이차방정식 2x^2-5x+2=0의 두 근을 α, β라 할 때 1/α + 1/β의 값을 구하시오.", "(α+β)/(αβ)", "5/2", "역수의 합", "numeric"),
         ("근의 차로 계수 제곱 복원", "이차방정식 x^2+kx+4=0의 두 근의 차가 3일 때 k^2의 값을 구하시오.", "두 근을 1, 4 또는 -1, -4로 복원합니다.", "25", "근의 차로 계수 제곱 복원", "numeric"),
-        ("공통근 매개변수 역추적", "방정식 x^2-5x+6=0과 x^2+ax+6=0이 공통인 근을 하나 가질 때 a의 값을 모두 구하시오.", "공통근은 2 또는 3입니다.", "a=-5 또는 a=-4", "공통근 매개변수 복원", "exact"),
-        ("판별식으로 실근 개수", "이차방정식 x^2-4x+k=0이 서로 다른 두 실근을 갖도록 하는 정수 k의 개수를 구하시오.", "판별식 16-4k>0", "4", "판별식 정수 개수", "numeric"),
-        ("절댓값과 이차식 결합", "|x-1|=3-x 를 만족하는 실수 x의 값을 모두 구하시오.", "x≥1과 x<1로 나눕니다.", "1 또는 2", "절댓값과 일차식 결합", "exact"),
+        ("공통근 매개변수 역추적", "방정식 x^2-5x+6=0과 x^2+ax-6=0이 공통인 근을 하나만 가질 때 a의 값을 모두 구하시오.", "공통근은 2 또는 3입니다.", "-1 또는 1", "공통근 매개변수 복원", "set"),
+        ("판별식으로 실근 개수", "이차방정식 x^2-4x+k=0이 서로 다른 두 실근을 갖도록 하는 자연수 k의 개수를 구하시오.", "판별식 16-4k>0", "3", "판별식 정수 개수", "numeric"),
+        ("절댓값과 이차식 결합", "|x-1|=3-x 를 만족하는 실수 x의 값을 모두 구하시오.", "x≥1과 x<1로 나눕니다.", "2", "절댓값과 일차식 결합", "set"),
         ("이차부등식 해집합 길이", "부등식 x^2-6x+5<0의 해집합에서 정수의 개수를 구하시오.", "(x-1)(x-5)<0", "3", "이차부등식 정수 개수", "numeric"),
-        ("근의 이동", "방정식 x^2-4x+1=0의 두 근을 α, β라 할 때 (α+1)(β+1)의 값을 구하시오.", "αβ+α+β+1", "-2", "근의 이동", "numeric"),
+        ("근의 이동", "방정식 x^2-4x+1=0의 두 근을 α, β라 할 때 (α+1)(β+1)의 값을 구하시오.", "αβ+α+β+1", "6", "근의 이동", "numeric"),
         ("새 방정식 만들기", "이차방정식 x^2-3x-4=0의 두 근을 각각 2씩 더한 수를 근으로 하는 이차방정식을 구하시오.", "y=x+2로 치환합니다.", "x^2-7x+6=0", "새 방정식 만들기", "exact"),
-        ("부등식과 매개변수", "부등식 x^2+kx+4>0이 모든 실수 x에 대하여 성립하도록 하는 정수 k의 개수를 구하시오.", "판별식이 음수이고 최고차항 계수는 양수입니다.", "3", "부등식과 매개변수", "numeric"),
+        ("부등식과 매개변수", "부등식 x^2+kx+4>0이 모든 실수 x에 대하여 성립하도록 하는 정수 k의 개수를 구하시오.", "판별식이 음수이고 최고차항 계수는 양수입니다.", "7", "부등식과 매개변수", "numeric"),
         ("근과 계수의 선형결합", "이차방정식 x^2-6x+8=0의 두 근을 α, β라 할 때 α/β + β/α의 값을 구하시오.", "(α^2+β^2)/(αβ)", "5/2", "근과 계수의 선형결합", "numeric"),
         ("삼차식 인수조건", "삼차방정식 x^3-6x^2+11x-k=0이 x=1을 근으로 가질 때 k의 값을 구하시오.", "1-6+11-k=0", "6", "삼차식 인수조건", "numeric"),
         ("중근 판정", "방정식 x^2+2ax+a=0이 중근을 가질 때 a의 값을 구하시오.", "판별식 4a^2-4a=0", "0 또는 1", "중근 판정", "exact"),
