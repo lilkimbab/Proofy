@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import UTC, date, datetime, timedelta
 import re
@@ -1701,8 +1702,7 @@ class DemoService:
             (scene for scene in runtime_scenes if scene.get("id") == scene_id),
             self._find_scene(state, scene_id),
         )
-        scene_objects = self._scene_object_summary(current_scene)
-        interruption = self.llm.plan_lesson_interruption(
+        question_context = dict(
             question=question,
             unit_title=str(state.practice_problem_set.get("lessonTitle") or state.active_lesson_id),
             scene_title=str(current_scene.get("title") or state.active_lesson_id),
@@ -1712,23 +1712,20 @@ class DemoService:
             scene_exam_cue=str(current_scene.get("examCue", "")),
             practice_statement=str(state.practice_problem.get("statement", "")),
             mastery_snapshot=to_jsonable(state.mastery),
-            scene_objects=scene_objects,
-            available_micro_scenes=list(bundle.get("microScenes", {}).keys()),
+            scene_objects=self._scene_object_summary(current_scene),
             selected_object_id=selected_object_id,
         )
-        direct_reply = self.llm.answer_lesson_question(
-            question=question,
-            unit_title=str(state.practice_problem_set.get("lessonTitle") or state.active_lesson_id),
-            scene_title=str(current_scene.get("title") or state.active_lesson_id),
-            narration=str(current_scene.get("narration", "")),
-            scene_goal=str(current_scene.get("teachingGoal", "")),
-            scene_takeaway=str(current_scene.get("takeaway", "")),
-            scene_exam_cue=str(current_scene.get("examCue", "")),
-            practice_statement=str(state.practice_problem.get("statement", "")),
-            mastery_snapshot=to_jsonable(state.mastery),
-            scene_objects=scene_objects,
-            selected_object_id=selected_object_id,
-        )
+        # Both are LLM calls that can take 10+ s each; run them side by side so the
+        # student waits for the slower one instead of the sum.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            interruption_job = pool.submit(
+                self.llm.plan_lesson_interruption,
+                available_micro_scenes=list(bundle.get("microScenes", {}).keys()),
+                **question_context,
+            )
+            reply_job = pool.submit(self.llm.answer_lesson_question, **question_context)
+            interruption = interruption_job.result()
+            direct_reply = reply_job.result()
         teacher_reply = direct_reply.text.strip() or interruption.teacher_reply
         base_scene = (
             bundle_question_scene(bundle, interruption.micro_scene_key or "recap")
