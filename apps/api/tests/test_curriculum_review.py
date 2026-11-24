@@ -5,6 +5,7 @@ import unittest
 
 from app.content.curriculum_seed import build_curriculum_bundle
 from app.db.content_repository import DATA_CONTENT_ROOT, MemoryContentRepository, sync_seed_bundles_to_data
+from app.domain.evaluator import build_evaluator
 from app.services.content_review import review_generated_bundle
 
 
@@ -229,6 +230,34 @@ class CurriculumReviewTest(unittest.TestCase):
             self.assertIn("킬러 예제 첫 줄 선택", titles)
             self.assertIn("킬러 예제 중간 전환", titles)
             self.assertIn("킬러 예제 끝줄 정리", titles)
+
+
+# Answer keys checked by hand and with SymPy. Each entry: statement fragment, answers that must
+# pass, answers that must fail (the old wrong key, or the usual slip the problem is about).
+EQUATION_KEY_CASES = [
+    ("|x-1|=3-x 를 만족하는", ["2", "x=2"], ["1 또는 2", "1, 2", "1"]),
+    ("x^2+ax-6=0이 공통인 근을 하나만", ["a=1 또는 a=-1", "-1, 1"], ["a=-5 또는 a=-4", "-5", "1"]),
+    ("서로 다른 두 실근을 갖도록 하는 자연수 k의 개수", ["3"], ["4"]),
+    ("x^2-4x+1=0의 두 근을 α, β라 할 때 (α+1)(β+1)", ["6"], ["-2"]),
+    ("x^2+kx+4>0이 모든 실수 x에 대하여", ["7"], ["3"]),
+]
+
+
+class EquationAnswerKeyTest(unittest.TestCase):
+    def test_equation_drill_answer_keys_grade_correctly(self) -> None:
+        bundle = build_curriculum_bundle()
+        problems = [problem for problem_set in bundle["problemSets"] for problem in problem_set["problems"]]
+        for fragment, accepted, rejected in EQUATION_KEY_CASES:
+            matches = [problem for problem in problems if fragment in str(problem.get("statement", ""))]
+            self.assertTrue(matches, fragment)
+            for problem in matches:
+                evaluator = build_evaluator(problem)
+                for answer in accepted:
+                    with self.subTest(problem=fragment, answer=answer, expect="accept"):
+                        self.assertTrue(evaluator.evaluate({"finalAnswer": answer})[0].accepted)
+                for answer in rejected:
+                    with self.subTest(problem=fragment, answer=answer, expect="reject"):
+                        self.assertFalse(evaluator.evaluate({"finalAnswer": answer})[0].accepted)
 
 
 if __name__ == "__main__":
