@@ -1,4 +1,4 @@
-"""Generate hard 수능 problems one at a time, verify them, and queue them for review.
+"""Generate hard problems one at a time, verify them, and approve or discard them automatically.
 
 Why it is built this way (see the 2026-11-23 probe):
 - The old bundle generator asked for lessons, scenes and problems in one call
@@ -9,11 +9,14 @@ Why it is built this way (see the 2026-11-23 probe):
   ones even when asked for #22.
 - A second model solving blind agreed 3 of 4 times and wrongly rejected a
   valid problem once, so SymPy, not another model, decides correctness.
+- Nobody reviews problems by hand, so approval is automatic and conservative:
+  any objection discards the problem (see judge()).
 
 Pipeline per problem:
-  generate -> SymPy check (repair on failure) -> strong blind solve
+  generate -> SymPy check (repair on failure) -> refuter looks for missed cases
+  (SymPy confirms; repair on a confirmed counterexample) -> strong blind solve
   -> weak blind solve (if the weak model solves it, it is not a #22: harden)
-  -> save with status, difficulty signals and full history for human review.
+  -> automatic judgment -> save with status, reasons and full history.
 """
 from __future__ import annotations
 
@@ -341,7 +344,7 @@ class FactoryConfig:
     weak_reasoning: str = "low"
     max_repairs: int = 2
     max_hardens: int = 2
-    second_opinion: bool = True
+    extra_solvers: list[str] = field(default_factory=list)  # every one must also agree
     refuter: str | None = "groq:openai/gpt-oss-120b"
     verify_timeout: int = 60
     busy_retries: int = 2
@@ -370,6 +373,35 @@ class _Attempt:
         if self.refuter.get("error"):
             found.append(f"반례 검토를 못 함: {self.refuter['error'][:120]}")
         return found
+
+
+def judge(report: VerificationReport, flags: list[str], solves: list[dict[str, Any]]) -> tuple[str, list[str]]:
+    """Decide without a human: approve only when every check agrees.
+
+    Nobody reviews problems by hand, so any doubt discards the problem. A wrong
+    problem in front of a student costs far more than a regenerated one. This is
+    why a second model agreeing no longer overrides the strong solver: on the
+    2026-11-23 "158" problem a second model confirmed the setter's answer, yet
+    the problem had two answers.
+
+    Returns (status, reasons): "rejected" when SymPy fails, "verified" when
+    nothing objects, otherwise "disputed".
+    """
+    if not report.ok:
+        return "rejected", report.failure_summary() or ["SymPy 검산 실패"]
+    reasons = list(flags)
+    checkers = [item for item in solves if item.get("role") in {"strong", "extra"}]
+    if not checkers:
+        reasons.append("정답을 확인할 풀이 모델 결과가 없음")
+    for solve in checkers:
+        name = solve.get("model") or solve.get("role")
+        if solve.get("error"):
+            reasons.append(f"{name} 풀이 실패: {str(solve['error'])[:120]}")
+        elif not solve.get("correct"):
+            reasons.append(f"{name}의 답 {solve.get('answer')}이(가) 출제 답과 다름")
+        elif solve.get("unique") is False:
+            reasons.append(f"{name}이(가) 답이 하나로 정해지지 않는다고 봄: {solve.get('issue') or ''}".rstrip(": "))
+    return ("verified" if not reasons else "disputed"), reasons
 
 
 def counterexample_spec(verify: dict[str, Any], counter: dict[str, Any]) -> dict[str, Any]:
@@ -577,12 +609,8 @@ class ProblemFactory:
             expected = _as_int(attempt.draft["answer"])
             statement = attempt.draft["statement"]
             round_solves = [self._solve(self.config.strong_solver, statement, expected, "strong")]
-            if not round_solves[0]["correct"] and self.config.second_opinion:
-                for second_model in self.config.generator_models:
-                    second = self._solve(second_model, statement, expected, "second")
-                    if not second.get("error"):
-                        round_solves.append(second)
-                        break
+            for extra_model in self.config.extra_solvers:
+                round_solves.append(self._solve(extra_model, statement, expected, "extra"))
             weak = self._solve(self.config.weak_solver, statement, expected, "weak", reasoning=self.config.weak_reasoning)
             round_solves.append(weak)
             solves.extend({**item, "round": len(rounds)} for item in round_solves)
@@ -601,7 +629,10 @@ class ProblemFactory:
 
         record = self._record(blueprint, archetype, target, best, attempt, rounds, solves)
         path = self.store.save(record)
-        self.log(f"저장: {path} · 상태 {record['status']} · 난이도 판정 {record['difficulty']['verdict']}")
+        verdict = "자동 승인" if record["review"]["state"] == "approved" else "자동 탈락"
+        self.log(f"저장: {path} · {verdict} · 난이도 판정 {record['difficulty']['verdict']}")
+        for reason in record["review"]["reasons"]:
+            self.log(f"  - {reason[:200]}")
         return record
 
     def _record(
@@ -617,15 +648,9 @@ class ProblemFactory:
         final = best[0] if best else last
         final_solves = best[1] if best else []
         strong = next((item for item in final_solves if item["role"] == "strong"), None)
-        second = next((item for item in final_solves if item["role"] == "second"), None)
         weak = next((item for item in final_solves if item["role"] == "weak"), None)
         flags = final.flags() if final.report.ok else []
-        if not final.report.ok:
-            status = "rejected"
-        elif ((strong and strong.get("correct")) or (second and second.get("correct"))) and not flags:
-            status = "verified"
-        else:
-            status = "disputed"
+        status, reasons = judge(final.report, flags, final_solves)
         if status == "rejected" or weak is None or weak.get("correct") is None:
             verdict = "unknown"
         elif weak["correct"]:
@@ -651,7 +676,13 @@ class ProblemFactory:
                 "strongReasoningTokens": strong.get("reasoningTokens") if strong else None,
                 "hardenRounds": sum(1 for item in rounds if item["kind"] == "harden"),
             },
-            "review": {"state": "pending", "note": "", "reviewedAt": None},
+            "review": {
+                "state": "approved" if status == "verified" else "rejected",
+                "by": "auto",
+                "reasons": reasons,
+                "note": "",
+                "reviewedAt": _now(),
+            },
             "problem": {
                 "statement": draft.get("statement", ""),
                 "answer": _as_int(draft.get("answer")),
@@ -674,14 +705,28 @@ class ProblemFactory:
 
 
 def set_review(store: ProblemStore, record_id: str, *, approve: bool, note: str = "") -> dict[str, Any]:
+    """Overturn the automatic decision by hand (optional; the pipeline never waits for this)."""
     record = store.get(record_id)
     if record is None:
         raise KeyError(record_id)
     if approve and record.get("status") == "rejected":
         raise ValueError("SymPy 검산을 통과하지 못한 문항은 승인할 수 없습니다")
-    record["review"] = {"state": "approved" if approve else "rejected", "note": note, "reviewedAt": _now()}
+    previous = record.get("review", {})
+    record["review"] = {
+        "state": "approved" if approve else "rejected",
+        "by": "manual",
+        "reasons": previous.get("reasons", []),
+        "note": note,
+        "reviewedAt": _now(),
+    }
     store.save(record)
     return record
+
+
+def difficulty_label(record: dict[str, Any]) -> str:
+    """App label from what was measured, not what was asked for (see known issue: labels by index)."""
+    hard = record.get("difficulty", {}).get("verdict") == "hard"
+    return "apex" if record.get("target") == "22" and hard else "killer"
 
 
 def to_app_problem(record: dict[str, Any]) -> dict[str, Any]:
@@ -700,7 +745,7 @@ def to_app_problem(record: dict[str, Any]) -> dict[str, Any]:
         "evaluationType": "structured-generic",
         "stepGuide": [],
         "finalPrompt": "정답 (자연수)",
-        "difficulty": "apex" if record.get("target") == "22" else "killer",
+        "difficulty": difficulty_label(record),
         "problemType": record.get("archetypeName", ""),
         "isKiller": True,
         "gradingSpec": {
@@ -727,6 +772,7 @@ def to_app_problem(record: dict[str, Any]) -> dict[str, Any]:
             "target": record.get("target"),
             "status": record.get("status"),
             "difficultyVerdict": record.get("difficulty", {}).get("verdict"),
+            "approvedBy": record.get("review", {}).get("by"),
             "reviewedAt": record.get("review", {}).get("reviewedAt"),
         },
     }

@@ -1,13 +1,13 @@
-"""Generate, review and export hard problems.
+"""Generate hard problems (approved or discarded automatically) and export them.
 
 Run from apps/api:
 
-  .venv/bin/python -m scripts.generate_problems generate --unit calc1-diff --count 2
+  .venv/bin/python -m scripts.generate_problems generate --unit calc1-diff --want 3 --count 10
   .venv/bin/python -m scripts.generate_problems generate --unit calc1-diff --model gemini:gemini-3.6-flash
   .venv/bin/python -m scripts.generate_problems list
   .venv/bin/python -m scripts.generate_problems show <id>
-  .venv/bin/python -m scripts.generate_problems review <id> --approve
   .venv/bin/python -m scripts.generate_problems export
+  .venv/bin/python -m scripts.generate_problems review <id> --reject --note "..."   # optional manual override
   .venv/bin/python -m scripts.generate_problems solve --file problem.txt --answer 13
 
 `solve` runs both solvers on a problem you paste in (for example a real past
@@ -67,23 +67,27 @@ def cmd_generate(args: argparse.Namespace) -> int:
         weak_reasoning=args.weak_reasoning,
         max_repairs=args.max_repairs,
         max_hardens=args.max_hardens,
-        second_opinion=not args.no_second_opinion,
+        extra_solvers=args.extra_solver or [],
         busy_retries=args.busy_retries,
         busy_wait_seconds=args.busy_wait,
         refuter=None if args.refuter == "none" else args.refuter,
     )
     factory = ProblemFactory(config, log=_log)
-    made = 0
+    made = approved = 0
     for index in range(args.count):
-        _log(f"\n=== {index + 1}/{args.count} ===")
+        _log(f"\n=== {index + 1}/{args.count} (승인 {approved}/{args.want or '-'}) ===")
         try:
             record = factory.run(args.unit, target=args.target, archetype_id=args.archetype)
         except GeneratorUnavailable as exc:
             _log(f"출제 모델을 쓸 수 없어 중단합니다: {exc}")
             break
         made += 1
+        approved += record["review"]["state"] == "approved"
         _print_summary(record)
-    _log(f"\nLLM 호출 {len(factory.calls)}회: " + ", ".join(f"{item['kind']}({item['model'].split(':')[-1]})" for item in factory.calls))
+        if args.want and approved >= args.want:
+            break
+    _log(f"\n출제 {made}개 중 자동 승인 {approved}개")
+    _log(f"LLM 호출 {len(factory.calls)}회: " + ", ".join(f"{item['kind']}({item['model'].split(':')[-1]})" for item in factory.calls))
     return 0 if made else 1
 
 
@@ -92,7 +96,7 @@ def _print_summary(record: dict) -> None:
     print(
         f"{record['id']}  {record['status']:<9} 난이도:{difficulty['verdict']:<9} "
         f"강한풀이 생각토큰:{difficulty.get('strongReasoningTokens')}  어렵게:{difficulty.get('hardenRounds')}회  "
-        f"검토:{record['review']['state']}  [{record['archetype']}]"
+        f"판정:{record['review']['state']}({record['review'].get('by', '-')})  [{record['archetype']}]"
     )
 
 
@@ -126,12 +130,12 @@ def cmd_show(args: argparse.Namespace) -> int:
         for case in problem["cases"]:
             print(f"- {case}")
     print(f"\n[함정] {problem.get('trap', '')}\n[난이도 근거] {problem.get('whyHard', '')}")
-    if record.get("flags"):
-        print("\n[검토할 점]")
-        for flag in record["flags"]:
-            print(f"- {flag}")
-    if record.get("review", {}).get("note"):
-        print(f"\n[검토 메모] {record['review']['note']}")
+    review = record.get("review", {})
+    print(f"\n[판정] {review.get('state')} ({review.get('by', '-')})")
+    for reason in review.get("reasons", []):
+        print(f"- {reason}")
+    if review.get("note"):
+        print(f"- 메모: {review['note']}")
     print("\n[SymPy 검산]")
     for check in record["verification"].get("checks", []):
         print(f"- {'통과' if check['ok'] else '실패'} {check['condition']}: {check['expr']}  {check.get('error') or ''}")
@@ -194,7 +198,8 @@ def main() -> int:
 
     generate = sub.add_parser("generate", help="새 문항 출제")
     generate.add_argument("--unit", required=True, choices=sorted(BLUEPRINTS))
-    generate.add_argument("--count", type=int, default=1)
+    generate.add_argument("--count", type=int, default=1, help="최대 출제 횟수")
+    generate.add_argument("--want", type=int, default=0, help="자동 승인이 이만큼 나오면 멈춤")
     generate.add_argument("--target", default="22", choices=["22", "4"])
     generate.add_argument("--archetype", help="출제 틀 id (없으면 가장 적게 쓴 틀)")
     generate.add_argument("--model", action="append", help="출제 모델, 여러 번 주면 앞에서부터 시도 (기본: gemini:APP_GEMINI_MODEL)")
@@ -203,7 +208,7 @@ def main() -> int:
     generate.add_argument("--weak-reasoning", default="low", choices=["low", "medium", "high"])
     generate.add_argument("--max-repairs", type=int, default=2)
     generate.add_argument("--max-hardens", type=int, default=2)
-    generate.add_argument("--no-second-opinion", action="store_true")
+    generate.add_argument("--extra-solver", action="append", help="정답을 함께 확인할 풀이 모델 (여러 번 줄 수 있음, 모두 맞혀야 승인)")
     generate.add_argument("--refuter", default="groq:openai/gpt-oss-120b", help="놓친 경우(반례)를 찾는 모델, 끄려면 none")
     generate.add_argument("--busy-retries", type=int, default=2, help="모든 출제 모델이 503일 때 다시 시도할 횟수")
     generate.add_argument("--busy-wait", type=int, default=90, help="다시 시도하기 전 기다릴 초")
@@ -220,14 +225,14 @@ def main() -> int:
     show.add_argument("--json", action="store_true")
     show.set_defaults(func=cmd_show)
 
-    review = sub.add_parser("review", help="승인/반려")
+    review = sub.add_parser("review", help="자동 판정을 손으로 뒤집기 (선택)")
     review.add_argument("id")
     review.add_argument("--approve", action="store_true")
     review.add_argument("--reject", action="store_true")
     review.add_argument("--note", default="")
     review.set_defaults(func=cmd_review)
 
-    export = sub.add_parser("export", help="승인한 문항을 앱 문제 형식으로 내보내기")
+    export = sub.add_parser("export", help="승인된 문항을 앱 문제 형식으로 내보내기")
     export.add_argument("--unit")
     export.set_defaults(func=cmd_export)
 

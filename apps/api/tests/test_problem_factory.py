@@ -75,9 +75,9 @@ NO_OBJECTION = {"counterexample": None, "statementIssue": ""}
 class FakeClient:
     """Scripted stand-in for LLMClient: generator replies and solver answers by role."""
 
-    def __init__(self, generator_replies, strong_answers, weak_answers, second_answers=(), unavailable=(), refuter_replies=()):
+    def __init__(self, generator_replies, strong_answers, weak_answers, extra_answers=(), unavailable=(), refuter_replies=()):
         self.generator_replies = list(generator_replies)
-        self.solver_answers = {"strong": list(strong_answers), "weak": list(weak_answers), "second": list(second_answers)}
+        self.solver_answers = {"strong": list(strong_answers), "weak": list(weak_answers), "extra": list(extra_answers)}
         self.refuter_replies = list(refuter_replies)
         self.unavailable = set(unavailable)
         self.prompts: list[tuple[str, str]] = []
@@ -94,7 +94,7 @@ class FakeClient:
             if isinstance(data, Exception):
                 raise data
             return LLMResult(model=model, text=json.dumps(data, ensure_ascii=False), data=data, elapsed=1.0, reasoning_tokens=100)
-        role = "strong" if model.endswith("120b") else ("weak" if model.endswith("-20b") else "second")
+        role = "strong" if model.endswith("120b") else ("weak" if model.endswith("-20b") else "extra")
         answer = self.solver_answers[role].pop(0)
         data = {"answer": answer, "unique": True, "issue": "", "keyStep": "중근 위치"}
         return LLMResult(model=model, text=json.dumps(data), data=data, elapsed=1.0, reasoning_tokens=5000 if role == "strong" else 800)
@@ -126,7 +126,7 @@ class ProblemFactoryTest(unittest.TestCase):
         self.assertEqual(record["status"], "verified")
         self.assertEqual(record["difficulty"]["verdict"], "hard")
         self.assertNotIn("$", record["problem"]["statement"])
-        self.assertEqual(record["review"]["state"], "pending")
+        self.assertEqual(record["review"], {**record["review"], "state": "approved", "by": "auto", "reasons": []})
         self.assertTrue((Path(self.tmp.name) / "problems" / "calc1-diff" / f"{record['id']}.json").exists())
 
     def test_wrong_answer_is_sent_back_for_repair(self) -> None:
@@ -140,6 +140,8 @@ class ProblemFactoryTest(unittest.TestCase):
         client = FakeClient([BAD_DRAFT, BAD_DRAFT, BAD_DRAFT], strong_answers=[], weak_answers=[])
         record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
         self.assertEqual(record["status"], "rejected")
+        self.assertEqual(record["review"]["state"], "rejected")
+        self.assertTrue(record["review"]["reasons"])
         with self.assertRaises(ValueError):
             set_review(self.store, record["id"], approve=True)
 
@@ -158,13 +160,39 @@ class ProblemFactoryTest(unittest.TestCase):
         self.assertEqual(record["problem"]["answer"], 54)
         self.assertEqual(record["difficulty"]["verdict"], "too-easy")
 
-    def test_strong_disagreement_asks_second_opinion(self) -> None:
-        client = FakeClient([GOOD_DRAFT], strong_answers=[None], weak_answers=[2], second_answers=[54])
-        record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
-        self.assertEqual(record["status"], "verified")
-        client = FakeClient([GOOD_DRAFT], strong_answers=[10], weak_answers=[2], second_answers=[11])
+    def test_any_solver_disagreement_discards_automatically(self) -> None:
+        # The strong solver failing is not rescued by another model agreeing (the "158" lesson).
+        self.config.extra_solvers = ["gemini:extra"]
+        client = FakeClient([GOOD_DRAFT], strong_answers=[None], weak_answers=[2], extra_answers=[54])
         record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
         self.assertEqual(record["status"], "disputed")
+        self.assertEqual(record["review"]["state"], "rejected")
+        self.assertTrue(any("출제 답과 다름" in reason for reason in record["review"]["reasons"]))
+
+        client = FakeClient([GOOD_DRAFT], strong_answers=[54], weak_answers=[2], extra_answers=[11])
+        record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
+        self.assertEqual(record["review"]["state"], "rejected")
+
+        client = FakeClient([GOOD_DRAFT], strong_answers=[54], weak_answers=[2], extra_answers=[54])
+        record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
+        self.assertEqual(record["review"]["state"], "approved")
+
+    def test_solver_saying_not_unique_discards(self) -> None:
+        client = FakeClient([GOOD_DRAFT], strong_answers=[54], weak_answers=[2])
+        factory = self._factory(client)
+        original = client.complete_json
+
+        def not_unique(model, system, user, **kwargs):
+            result = original(model, system, user, **kwargs)
+            if model.endswith("120b") and result.data and "answer" in result.data:
+                result.data["unique"] = False
+                result.data["issue"] = "삼중근 경우도 가능"
+            return result
+
+        client.complete_json = not_unique
+        record = factory.run("calc1-diff", archetype_id="diff-abs-kink")
+        self.assertEqual(record["review"]["state"], "rejected")
+        self.assertIn("삼중근", " ".join(record["review"]["reasons"]))
 
     def test_falls_back_to_next_generator_on_503(self) -> None:
         client = FakeClient([GOOD_DRAFT], strong_answers=[54], weak_answers=[2], unavailable={"gemini:main"})
@@ -193,11 +221,12 @@ class ProblemFactoryTest(unittest.TestCase):
         self.assertEqual(record["status"], "rejected")
         self.assertTrue(any("답이 하나로 정해지지 않음" in line for line in record["verification"]["errors"]))
 
-    def test_unconfirmed_objection_is_flagged_for_review(self) -> None:
+    def test_unconfirmed_objection_discards_automatically(self) -> None:
         bogus = {"counterexample": {"f": "x**3", "define": [], "note": "아무 함수"}, "statementIssue": ""}
         client = FakeClient([GOOD_DRAFT], strong_answers=[54], weak_answers=[2], refuter_replies=[bogus])
         record = self._factory(client).run("calc1-diff", archetype_id="diff-abs-kink")
         self.assertEqual(record["status"], "disputed")
+        self.assertEqual(record["review"]["state"], "rejected")
         self.assertFalse(record["refuter"]["confirmed"])
         self.assertTrue(record["flags"])
 
@@ -233,17 +262,24 @@ class ProblemFactoryTest(unittest.TestCase):
         self.assertEqual(waits, [self.config.busy_wait_seconds] * self.config.busy_retries)
         self.assertEqual(self.store.all(), [])
 
-    def test_export_only_approved(self) -> None:
-        client = FakeClient([GOOD_DRAFT, GOOD_DRAFT], strong_answers=[54, 54], weak_answers=[2, 2])
+    def test_export_takes_auto_approved_and_labels_by_measured_difficulty(self) -> None:
+        self.config.max_hardens = 0
+        client = FakeClient([GOOD_DRAFT, GOOD_DRAFT, GOOD_DRAFT], strong_answers=[54, 10, 54], weak_answers=[2, 2, 54])
         factory = self._factory(client)
-        approved = factory.run("calc1-diff", archetype_id="diff-abs-kink")
-        factory.run("calc1-diff", archetype_id="diff-abs-kink")
-        set_review(self.store, approved["id"], approve=True, note="ok")
+        hard = factory.run("calc1-diff", archetype_id="diff-abs-kink")
+        discarded = factory.run("calc1-diff", archetype_id="diff-abs-kink")
+        easy = factory.run("calc1-diff", archetype_id="diff-abs-kink")
+        self.assertEqual(discarded["review"]["state"], "rejected")
         written = export_approved(self.store)
-        problems = json.loads(written["calc1-diff"].read_text(encoding="utf-8"))
-        self.assertEqual([item["id"] for item in problems], [approved["id"]])
-        self.assertEqual(problems[0]["gradingSpec"]["final"]["expected"], ["54"])
-        self.assertEqual(problems[0]["difficulty"], "apex")
+        problems = {item["id"]: item for item in json.loads(written["calc1-diff"].read_text(encoding="utf-8"))}
+        self.assertEqual(set(problems), {hard["id"], easy["id"]})
+        self.assertEqual(problems[hard["id"]]["gradingSpec"]["final"]["expected"], ["54"])
+        self.assertEqual(problems[hard["id"]]["difficulty"], "apex")
+        self.assertEqual(problems[easy["id"]]["difficulty"], "killer")
+
+        set_review(self.store, hard["id"], approve=False, note="문장이 어색함")
+        problems = json.loads(export_approved(self.store)["calc1-diff"].read_text(encoding="utf-8"))
+        self.assertEqual([item["id"] for item in problems], [easy["id"]])
 
     def test_archetypes_rotate(self) -> None:
         client = FakeClient([GOOD_DRAFT, GOOD_DRAFT], strong_answers=[54, 54], weak_answers=[2, 2])
